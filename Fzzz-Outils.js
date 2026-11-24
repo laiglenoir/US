@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fourmizzz - Outils unifiés
 // @namespace    fourmizzz-outils-reunis
-/// @version      1.0.3
+// @version      1.0.4
 // @updateURL    https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils.js
 // @downloadURL  https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils.js
 // @description  Analyse RC avec bilan TDP automatique, Bilan TdC, Chasseurs, ConvoiMax.
