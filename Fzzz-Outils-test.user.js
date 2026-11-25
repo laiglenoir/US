@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fourmizzz - Outils unifiés test
 // @namespace    fourmizzz-outils-reunis
-// @version      1.1.4
+// @version      1.1.5
 // @updateURL    https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils-test.user.js
 // @downloadURL  https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils-test.user.js
 // @description  Analyse RC avec bilan TDP automatique, Bilan TdC, Chasseurs, ConvoiMax, Horloge.
@@ -138,7 +138,19 @@
                     --fz-espacement: 8px;
                     --fz-padding: 10px;
                     --fz-police: Arial, sans-serif;
-                    --fz-taille-texte: 14px;
+                    /* Ajustement global des tailles de police */
+                    --fz-taille-ajustement: 1px;
+
+                    /* Tailles de police communes */
+                    --fz-taille-11: calc(11px + var(--fz-taille-ajustement));
+                    --fz-taille-12: calc(12px + var(--fz-taille-ajustement));
+                    --fz-taille-13: calc(13px + var(--fz-taille-ajustement));
+                    --fz-taille-14: calc(14px + var(--fz-taille-ajustement));
+                    --fz-taille-15: calc(15px + var(--fz-taille-ajustement));
+                    --fz-taille-16: calc(16px + var(--fz-taille-ajustement));
+                    --fz-taille-18: calc(18px + var(--fz-taille-ajustement));
+
+                    --fz-taille-texte: var(--fz-taille-14);                    
                 }
                 .fz-panneau,
                 .fz-panneau * { box-sizing: border-box; }
@@ -181,7 +193,7 @@
                     border-radius: 30px;
                     padding: 7px 20px;
                     min-width: 55%;
-                    font-size: 15px;
+                    font-size: var(--fz-taille-15);
                     font-weight: 600;
                     text-align: center;
                     text-transform: uppercase;
@@ -197,7 +209,7 @@
                     border: 1px solid var(--fz-bordure);
                     border-radius: var(--fz-rayon-bouton);
                     padding: 7px 12px;
-                    font: 600 13px var(--fz-police);
+                    font: 600 var(--fz-taille-13) var(--fz-police);
                     cursor: pointer;
                 }
                 .fz-panneau button.fz-bouton:hover { background: var(--fz-gradient-survol); }
@@ -225,7 +237,7 @@
                     border-radius: var(--fz-rayon-carte);
                     text-align: center;
                 }
-                .fz-carte strong { font-size: 16px; font-weight: 600; }
+                .fz-carte strong { font-size: var(--fz-taille-16); font-weight: 600; }
                 .fz-detail { margin: 7px 0; border-radius: var(--fz-rayon-carte); overflow: hidden; box-shadow: 0 2px 4px #5b431c33; }
                 .fz-detail > summary { padding: 8px 12px;  background: var(--fz-gradient-carte); border-radius: var(--fz-rayon-carte); box-shadow: inset 0 1px 2px #ffffff80; text-shadow: var(--fz-ombre-texte); cursor: pointer; overflow-wrap: anywhere; }
                 .fz-detail[open] { box-shadow: inset 0 0 0 1px var(--fz-bordure); }
@@ -250,10 +262,10 @@
                     border: 1px solid var(--fz-bordure);
                     border-radius: var(--fz-rayon-carte);
                     padding: 10px;
-                    font: 13px Consolas, monospace;
+                    font: var(--fz-taille-13) Consolas, monospace;
                     box-shadow: var(--fz-ombre-creuse);
                 }
-                .fz-panneau table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; }
+                .fz-panneau table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: var(--fz-taille-12); }
                 .fz-panneau th,
                 .fz-panneau td { border-bottom: 1px solid var(--fz-bordure); padding: 6px; text-align: right; white-space: nowrap; }
                 .fz-panneau th:first-child,
@@ -264,9 +276,9 @@
                 .fz-alerte { color: var(--fz-alerte); }
                 @media (max-width: 650px) { .fz-panneau { top: 2vh; width: 96vw; max-height: 90vh; }
                     .fz-entete { padding: 10px 75px 10px 8px; }
-                    .fz-titre { width: 100%; padding: 7px; font-size: 13px; }
-                    .fz-carte { padding: 6px 3px; font-size: 12px; }
-                    .fz-carte strong { font-size: 14px; }
+                    .fz-titre { width: 100%; padding: 7px; font-size: var(--fz-taille-13); }
+                    .fz-carte { padding: 6px 3px; font-size: var(--fz-taille-12); }
+                    .fz-carte strong { font-size: var(--fz-taille-14); }
                 }
             `;
             document.head.append(style);
@@ -858,18 +870,18 @@
                 #rc-panneau .rc-interieur > details { margin-top: 10px; }
                 #rc-panneau .rc-chiffres { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--fz-espacement); }
                 #rc-panneau .rc-chiffres > div { display: flex; flex-direction: column; gap: 4px; padding: var(--fz-padding); background: var(--fz-carte); border-radius: var(--fz-rayon-carte); }
-                #rc-panneau .rc-chiffres b { font-size: 16px; }
+                #rc-panneau .rc-chiffres b { font-size: var(--fz-taille-16); }
                 #rc-panneau .rc-niveaux { display: flex; flex-direction: column; gap: var(--fz-espacement); margin: 10px 0; }
                 #rc-panneau .rc-niveau-camp { padding: var(--fz-padding); border-radius: var(--fz-rayon-carte); background: var(--fz-carte); }
                 #rc-panneau .rc-camp-att { border-left: 4px solid var(--fz-echec); }
                 #rc-panneau .rc-camp-def { border-left: 4px solid var(--fz-succes); }
-                #rc-panneau .rc-niveau-camp h4 { margin: 0 0 6px; color: var(--fz-texte); font-size: 14px; }
+                #rc-panneau .rc-niveau-camp h4 { margin: 0 0 6px; color: var(--fz-texte); font-size: var(--fz-taille-14); }
                 #rc-panneau .rc-niveau-camp p { margin: 4px 0; }
                 #rc-panneau .rc-armee-restante { padding: var(--fz-padding); background: var(--fz-carte); border-radius: var(--fz-rayon-carte); line-height: 1.6; overflow-wrap: anywhere; }
                 #rc-panneau .rc-alerte { color: var(--fz-alerte); }
                 #rc-panneau .rc-note { color: var(--fz-texte-secondaire); margin: 8px 0; }
                 #rc-panneau .rc-resume-tdp { text-align: center; padding: 6px; }
-                #rc-panneau #rc-bilan-tdp h3 { margin: 10px 0 6px; font-size: 14px; color: var(--fz-texte); }
+                #rc-panneau #rc-bilan-tdp h3 { margin: 10px 0 6px; font-size: var(--fz-taille-14); color: var(--fz-texte); }
                 #rc-panneau #rc-actions-resultats { margin-top: 12px; margin-bottom: 0; }
                 @media (max-width: 650px) { #rc-panneau .rc-chiffres { grid-template-columns: 1fr; } }
             `;
@@ -1143,13 +1155,13 @@
                 }
                 #tdc-panel h3 {
                     margin: 0 0 6px;
-                    font-size: 14px;
+                    font-size: var(--fz-taille-14);
                     color: var(--fz-texte);
                 }
                 #tdc-panel .tdc-topic {
                     text-align: center;
                     font-weight: 700;
-                    font-size: 14px;
+                    font-size: var(--fz-taille-14);
                     overflow-wrap: anywhere;
                     margin-bottom: 4px;
                 }
@@ -1162,22 +1174,22 @@
                     gap: 5px;
                 }
                 #tdc-panel .tdc-k {
-                    font-size: 13px;
+                    font-size: var(--fz-taille-13);
                     font-weight: 600;
                 }
                 #tdc-panel .tdc-n {
-                    font-size: 18px;
+                    font-size: var(--fz-taille-18);
                     font-weight: 700;
                     font-variant-numeric: tabular-nums;
                     overflow-wrap: anywhere;
                     max-width: 100%;
                 }
                 #tdc-panel .tdc-u {
-                    font-size: 12px;
+                    font-size: var(--fz-taille-12);
                 }
                 #tdc-panel .tdc-internes {
                     text-align: center;
-                    font-size: 12px;
+                    font-size: var(--fz-taille-12);
                     color: var(--fz-texte-secondaire);
                 }
                 #tdc-panel .tdc-scroll {
@@ -1216,7 +1228,7 @@
                 }
                 #tdc-panel .tdc-note,
                 #tdc-panel .tdc-muted {
-                    font-size: 12px;
+                    font-size: var(--fz-taille-12);
                     color: var(--fz-texte-secondaire);
                 }
                 #tdc-panel .tdc-note.warn {
@@ -1224,7 +1236,7 @@
                 }
                 #tdc-panel .tdc-phrase {
                     font-weight: 700;
-                    font-size: 14px;
+                    font-size: var(--fz-taille-14);
                     text-align: center;
                     padding: var(--fz-padding);
                     background: var(--fz-gradient-carte);
@@ -1232,7 +1244,7 @@
                     box-shadow: var(--fz-ombre-relief);
                 }
                 #tdc-panel .tdc-sub {
-                    font-size: 11px;
+                    font-size: var(--fz-taille-11);
                     color: var(--fz-texte-secondaire);
                     font-weight: 400;
                 }
@@ -1247,7 +1259,7 @@
                 }
                 #tdc-panel select {
                     font: inherit;
-                    font-size: 13px;
+                    font-size: var(--fz-taille-13);
                     margin-left: 5px;
                     padding: 5px 8px;
                     background: var(--fz-saisie);
@@ -1266,11 +1278,11 @@
                 }
                 @media (max-width: 650px) {
                     #tdc-panel .tdc-n {
-                        font-size: 13px;
+                        font-size: var(--fz-taille-13);
                     }
                     #tdc-panel .tdc-k,
                     #tdc-panel .tdc-u {
-                        font-size: 11px;
+                        font-size: var(--fz-taille-11);
                     }
                 }
             `;
