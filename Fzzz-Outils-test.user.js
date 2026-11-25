@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         Fourmizzz - Outils unifiés test
 // @namespace    fourmizzz-outils-reunis
-// @version      1.0.5
+// @version      1.1.0
 // @updateURL    https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils-test.user.js
 // @downloadURL  https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils-test.user.js
-// @description  Analyse RC avec bilan TDP automatique, Bilan TdC, Chasseurs, ConvoiMax.
+// @description  Analyse RC avec bilan TDP automatique, Bilan TdC, Chasseurs, ConvoiMax, Horloge.
 // @match        *://*.fourmizzz.fr/*
 // @run-at       document-end
 // @noframes
@@ -302,6 +302,10 @@
                     <path d="M16.5 20c1.576 -1.576 2.5 -4.095 2.5 -6.5c0 -4.81 -3.69 -8.5 -8.5 -8.5c-2.415 0 -4.922 .913 -6.5 2.5l12.5 12.5" />
                 </svg>
             `,
+            fz_boutonHorloge: `
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M12 6v6l4 2"/>
+            `,            
         };
         static icone(id, modele) {
             const dessin = this.icones[id];
@@ -328,11 +332,11 @@
             );
             return span;
         }              
-        static ajouter(id, libelle, action = null, href = '#') {
-            this.elements.set(id, {libelle, action, href});
+        static ajouter(id, libelle, action = null, href = '#', menu = 'menuAlliance') {
+            this.elements.set(id, { libelle, action, href, menu });
             this.initialiser();
             this.rendre();
-        }
+        }        
         static initialiser() {
             if (this.observateur) return;
             this.observateur = new MutationObserver(() => {
@@ -346,51 +350,151 @@
             });
         }
         static complet() {
-            const alliance = document.getElementById('menuAlliance');
-            if (!alliance) return false;
-            return [...this.elements.keys()].every((id) => {
+            return [...this.elements.entries()].every(([id, definition]) => {
+                const menu = document.getElementById(definition.menu);
                 const lien = document.getElementById(id);
-                return lien &&
-                    lien.parentElement?.parentElement === alliance;
+                return menu &&
+                    lien &&
+                    lien.parentElement?.parentElement === menu;
             });
-        }
+        }        
         static rendre() {
-            const alliance = document.getElementById('menuAlliance');
-            if (!alliance) return;
-            const modele = alliance.querySelector(
-                'a.boutonMembres, a[href="alliance.php?Membres"]'
-            );
-            if (!modele) return;
-            // Supprime les éventuels restes de l'ancien menu Outils.
             document.getElementById('fz_menuOutilsEntree')?.remove();
             document.getElementById('fz_menuOutilsListe')?.remove();
             document.getElementById('fz-style-menu-outils')?.remove();
             for (const [id, definition] of this.elements) {
+                const menu = document.getElementById(definition.menu);
+                if (!menu) continue;
+                const modele = definition.menu === 'menuAlliance'
+                    ? menu.querySelector(
+                        'a.boutonMembres, a[href="alliance.php?Membres"]'
+                    )
+                    : menu.querySelector('li > a');
+                if (!modele) continue;
                 let lien = document.getElementById(id);
                 if (!lien) {
                     const li = document.createElement('li');
                     lien = document.createElement('a');
                     lien.id = id;
                     lien.href = definition.href;
-                    lien.className = 'boutonMembres';
+                    lien.className = definition.menu === 'menuAlliance'
+                        ? 'boutonMembres'
+                        : modele.className;
                     lien.appendChild(this.icone(id, modele));
                     lien.appendChild(
                         document.createTextNode(definition.libelle)
                     );
                     li.appendChild(lien);
-                    alliance.appendChild(li);
+                    menu.appendChild(li);
                 }
                 if (!lien.dataset.fzActionInstallee) {
                     lien.dataset.fzActionInstallee = '1';
                     lien.addEventListener('click', (event) => {
                         const action = this.elements.get(id)?.action;
-                        if (action) {
-                            event.preventDefault();
-                            action();
-                        }
+                        if (action) { event.preventDefault(); action(); }
                     });
-                }                
+                }
             }
+        }        
+    }
+    class Horloge {
+        static ID = 'fz-clock';
+        static CLE_STOCKAGE = 'fz-horloge-active';
+        static FALLBACK_TOP = 95;
+        static GAP_TOP = 2;
+        static GAP_RIGHT = 22;
+        static clock = null;
+        static intervalle = null;
+        static active = true;
+        static init() {
+            if (window.top !== window.self) return;
+            if (document.getElementById(this.ID)) return;
+            this.active = localStorage.getItem(this.CLE_STOCKAGE) !== '0';
+            this.clock = document.createElement('div');
+            this.clock.id = this.ID;
+            this.clock.style.cssText = `
+                position: fixed;
+                top: ${this.FALLBACK_TOP}px;
+                right: clamp(4px, 1vw, 12px);
+                z-index: 999999;
+                font-family: Arial, sans-serif;
+                font-size: clamp(12px, 1.5vw, 14px);
+                font-weight: bold;
+                text-align: right;
+                white-space: nowrap;
+                pointer-events: none;
+                padding: 2px 3px;
+                background: #454737;
+                color: #ffffff;
+                border-radius: 5px;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+            `;
+            document.body.appendChild(this.clock);
+            MenuOutils.ajouter(
+                'fz_boutonHorloge',
+                'Horloge',
+                () => this.basculer(),
+                '#',
+                'menuFourmiliere'
+            );
+            this.appliquerEtat();
+            window.addEventListener('resize', () => this.place());
+            window.addEventListener('scroll', () => this.place(), {
+                passive: true
+            });
+            window.addEventListener('load', () => this.place());
+            setTimeout(() => this.place(), 1000);
+        }
+        static basculer() {
+            this.active = !this.active;
+            localStorage.setItem(
+                this.CLE_STOCKAGE,
+                this.active ? '1' : '0'
+            );
+            this.appliquerEtat();
+        }
+        static appliquerEtat() {
+            this.clock.style.display = this.active ? '' : 'none';
+            if (this.active) {
+                this.update();
+                this.place();
+                if (this.intervalle === null) { this.intervalle = setInterval( () => this.update(), 250 );
+                }
+            } else { clearInterval(this.intervalle); this.intervalle = null;
+            }
+        }
+        static place() {
+            if (!this.clock || !this.active) return;
+            const banner = document.getElementById('menu');
+            const centre = document.getElementById('centre');
+            const droite = document.getElementById('droite');
+            const largeur = document.documentElement.clientWidth;
+            // Positionnement vertical.
+            if (banner) {
+                const r = banner.getBoundingClientRect();
+                this.clock.style.top =
+                    Math.max(0, r.bottom) + this.GAP_TOP + 'px';
+            } else {
+                this.clock.style.top = this.FALLBACK_TOP + 'px';
+            }
+            // Positionnement horizontal.
+            if (droite && droite.getBoundingClientRect().width > 0) {
+                const r = droite.getBoundingClientRect();
+                this.clock.style.right =
+                    Math.max(0, largeur - r.left) + this.GAP_RIGHT + 'px';
+            } else if (centre) {
+                const r = centre.getBoundingClientRect();
+                this.clock.style.right =
+                    Math.max(0, largeur - r.right) + this.GAP_RIGHT + 'px';
+            } else {
+                this.clock.style.right = this.GAP_RIGHT + 'px';
+            }
+        }
+        static update() {
+            const d = new Date();
+            this.clock.textContent = [ d.getHours(), d.getMinutes(), d.getSeconds() ]
+                .map(n => String(n).padStart(2, '0'))
+                .join(':');
         }
     }
     class AnalyseRC {
@@ -2603,4 +2707,5 @@
     Chasseurs.init();
     ConvoiMax.init();
     TempsTrajet.init();
+    Horloge.init();
 })();
