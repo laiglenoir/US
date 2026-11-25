@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fourmizzz - Outils unifiés test
 // @namespace    fourmizzz-outils-reunis
-// @version      1.1.1
+// @version      1.1.3
 // @updateURL    https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils-test.user.js
 // @downloadURL  https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils-test.user.js
 // @description  Analyse RC avec bilan TDP automatique, Bilan TdC, Chasseurs, ConvoiMax, Horloge.
@@ -281,14 +281,17 @@
                 viewBox="0 0 640 640"><!--!Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
                 <path d="M208.5 192C243.8 192 272.5 163.3 272.5 128C272.5 92.7 243.8 64 208.5 64C173.2 64 144.5 92.7 144.5 128C144.5 163.3 173.2 192 208.5 192zM192.5 544L192.5 448L224.5 448L224.5 544C224.5 561.7 238.8 576 256.5 576C274.2 576 288.5 561.7 288.5 544L288.5 351.8L309.4 385C318.8 400 338.6 404.4 353.5 395C368.4 385.6 372.9 365.8 363.5 350.9L323.6 287.6C298.8 248 255.3 224 208.5 224C161.7 224 118.2 248 93.3 287.6L53.4 351C44 366 48.5 385.7 63.4 395.1C78.3 404.5 98.1 400 107.5 385.1L128.4 351.9L128.4 544.1C128.4 561.8 142.7 576.1 160.4 576.1C178.1 576.1 192.4 561.8 192.4 544.1zM480.5 64L448.5 64C439.7 64 432.5 71.2 432.5 80C432.5 88.8 439.7 96 448.5 96L448.5 196.3C438.9 201.8 432.5 212.2 432.5 224L432.5 256C414.8 256 400.5 270.3 400.5 288L400.5 432C400.5 449.7 414.8 464 432.5 464L448.5 464L448.5 560C448.5 568.8 455.7 576 464.5 576L524 576C534.4 576 542 566.2 539.5 556.1L516.5 464L560.5 464C569.3 464 576.5 456.8 576.5 448L576.5 432C576.5 423.2 569.3 416 560.5 416L512.5 416L512.5 389.3L565.6 371.6C572.1 369.4 576.5 363.3 576.5 356.4L576.5 271.9C576.5 263.1 569.3 255.9 560.5 255.9L544.5 255.9C535.7 255.9 528.5 263.1 528.5 271.9L528.5 327.9L512.5 333.2L512.5 223.9C512.5 212.1 506.1 201.7 496.5 196.2L496.5 79.9C496.5 71.1 489.3 63.9 480.5 63.9z"/></svg>
             `,    
-            fz_boutonBilanTdC: `
+            /*fz_boutonBilanTdC: `
                 <path d="m12.99 6.74 1.93 3.44"/>
                 <path d="M19.136 12a10 10 0 0 1-14.271 0"/>
                 <path d="m21 21-2.16-3.84"/>
                 <path d="m3 21 8.02-14.26"/>
                 <circle cx="12" cy="5" r="2"/>
+            `,*/
+            fz_boutonBilanTdC: `
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chart-no-axes-combined preview-icon"><path d="M12 16v5"/><path d="M16 14.639V21"/><path d="M20 10.656V21"/><path d="m22 3-8.646 8.646a.5.5 0 0 1-.708 0L9.354 8.354a.5.5 0 0 0-.707 0L2 15"/><path d="M4 18.463V21"/><path d="M8 14.656V21"/></svg>
             `,
-            fz_boutonChasseurs: `
+            /*fz_boutonChasseurs: `
                 <svg xmlns="http://www.w3.org/2000/svg"
                     width="24" height="24"
                     viewBox="0 0 24 24"
@@ -301,6 +304,9 @@
                     <path d="M3 18h3v3" />
                     <path d="M16.5 20c1.576 -1.576 2.5 -4.095 2.5 -6.5c0 -4.81 -3.69 -8.5 -8.5 -8.5c-2.415 0 -4.922 .913 -6.5 2.5l12.5 12.5" />
                 </svg>
+            `,*/
+            fz_boutonChasseurs: `
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-target preview-icon"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
             `,
             fz_boutonHorloge: `
                 <svg xmlns="http://www.w3.org/2000/svg" 
