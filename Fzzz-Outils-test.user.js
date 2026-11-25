@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fourmizzz - Outils unifiés test
 // @namespace    fourmizzz-outils-reunis
-// @version      1.1.3
+// @version      1.1.4
 // @updateURL    https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils-test.user.js
 // @downloadURL  https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils-test.user.js
 // @description  Analyse RC avec bilan TDP automatique, Bilan TdC, Chasseurs, ConvoiMax, Horloge.
@@ -1338,17 +1338,21 @@
                 var select = multi ? '<div class="tdc-nous">Notre alliance : <select id="tdc-nous">' + groups.map(function (g) {
                 return '<option value="' + esc(g) + '"' + (g === nous ? ' selected' : '') + '>' + esc(etiquette(g)) + '</option>';
                 }).join('') + '</select><div class="tdc-note">Le sens des mouvements est déterminé par les alliances des joueurs identifiés.</div></div>' : '';
-                const choixInconnus = (p) => p.entries.map((e) => {
-                    const cle = Commun.norm(e.target);
-                    if (!cle || auteurs.has(cle)) return '';
-                    const valeur = corrections.get(cle) || '';
-                    return '<div class="tdc-note">Alliance de ' + esc(e.target) +
-                        ' (non identifié parmi les auteurs) : <select class="tdc-affiliation" data-pseudo="' + esc(e.target) + '">' +
-                        '<option value=""' + (!valeur ? ' selected' : '') + '>Inconnue</option>' +
-                        '<option value="nous"' + (valeur === nous ? ' selected' : '') + '>Notre alliance</option>' +
-                        '<option value="autre"' + (valeur === '__autre__' ? ' selected' : '') + '>Autre alliance</option>' +
-                        '</select></div>';
-                }).join('');
+                const choixInconnus = (p) => {
+                    const dejaVus = new Set();
+                    return p.entries.map((e) => {
+                        const cle = Commun.norm(e.target);
+                        if (!cle || auteurs.has(cle) || dejaVus.has(cle)) return '';
+                        dejaVus.add(cle);
+                        const valeur = corrections.get(cle) || '';
+                        return '<div class="tdc-note">Alliance de ' + esc(e.target) +
+                            ' (non identifié parmi les auteurs) : <select class="tdc-affiliation" data-pseudo="' + esc(e.target) + '">' +
+                            '<option value=""' + (!valeur ? ' selected' : '') + '>Inconnue</option>' +
+                            '<option value="nous"' + (valeur === nous ? ' selected' : '') + '>Notre alliance</option>' +
+                            '<option value="autre"' + (valeur === '__autre__' ? ' selected' : '') + '>Autre alliance</option>' +
+                            '</select></div>';
+                    }).join('');
+                };                
                 var list = posts.length ? posts.map(function (p, i) {
                 var ok = p.entries.length > 0, on = ok && !excluded.has(i);
                 var what = ok ? p.entries.map(function (e) {
