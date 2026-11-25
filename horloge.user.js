@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Fourmizzz - Horloge2
+// @name         Fourmizzz - Horloge
 // @namespace    fourmizzz
-// @version      2.3
+// @version      2.4
 // @updateURL    https://raw.githubusercontent.com/laiglenoir/US/main/horloge.user.js
 // @downloadURL  https://raw.githubusercontent.com/laiglenoir/US/main/horloge.user.js
 // @description  Horloge avec secondes sous le bandeau
