@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fourmizzz - Outils unifiés test
 // @namespace    fourmizzz-outils-reunis
-// @version      1.0.4
+// @version      1.0.5
 // @updateURL    https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils-test.user.js
 // @downloadURL  https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils-test.user.js
 // @description  Analyse RC avec bilan TDP automatique, Bilan TdC, Chasseurs, ConvoiMax.
@@ -108,6 +108,8 @@
                     --fz-neutre: #c9b083;
                     --fz-bordure: #88602c;
                     --fz-texte: #38240e;
+                    --fz-texte-secondaire: #725d34;
+                    --fz-alerte: #a32d46;                    
                     --fz-saisie: #eddbaf;
                     --fz-gradient-fond:
                         radial-gradient(ellipse at top, #ead4a0, transparent 80%),
