@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name         Fourmizzz - Outils unifiés
+// @name         Fourmizzz - Outils unifiés test
 // @namespace    fourmizzz-outils-reunis
-// @version      1.0.5
+// @version      1.1.6
 // @updateURL    https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils.user.js
 // @downloadURL  https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils.user.js
-// @description  Analyse RC avec bilan TDP automatique, Bilan TdC, Chasseurs, ConvoiMax.
+// @description  Analyse RC avec bilan TDP automatique, Bilan TdC, Chasseurs, ConvoiMax, Horloge.
 // @match        *://*.fourmizzz.fr/*
 // @run-at       document-end
 // @noframes
@@ -93,6 +93,197 @@
             return $("#menuComptePlus a.boutonStatJoueur").length && $("#menuComptePlus a.boutonStatJoueur").text() == "Stat" ? true : false;
         }
     }
+    class InterfaceGraphique {
+        static init() {
+            if (document.getElementById('fz-style-commun')) return;
+            const style = document.createElement('style');
+            style.id = 'fz-style-commun';
+            style.textContent = `
+                :root {
+                    --fz-fond: #dfc28a;
+                    --fz-titre: #d6a54b;
+                    --fz-carte: #d3ac65;
+                    --fz-succes: #69a849;
+                    --fz-echec: #d77959;
+                    --fz-neutre: #c9b083;
+                    --fz-bordure: #88602c;
+                    --fz-texte: #38240e;
+                    --fz-texte-secondaire: #725d34;
+                    --fz-alerte: #a32d46;                    
+                    --fz-saisie: #eddbaf;
+                    --fz-gradient-fond:
+                        radial-gradient(ellipse at top, #ead4a0, transparent 80%),
+                        linear-gradient(145deg, #dfc28a, #bc9455);
+                    --fz-gradient-titre:
+                        linear-gradient(180deg, #f4d58b, #d6a54b 48%, #b78330);
+                    --fz-gradient-carte:
+                        linear-gradient(150deg, #f3dba3, #d3ac65);
+                    --fz-gradient-bouton:
+                        linear-gradient(180deg, #f5d99b, #c99b4e);
+                    --fz-gradient-survol:
+                        linear-gradient(180deg, #ffe4ac, #dab064);
+                    --fz-gradient-succes:
+                        linear-gradient(180deg, #a5d17c, #69a849 48%, #488333);
+                    --fz-gradient-echec:
+                        linear-gradient(180deg, #edaa8b, #d77959 48%, #b9573d);
+                    --fz-gradient-neutre:
+                        linear-gradient(180deg, #e5d0a6, #c9b083, #ad9366);
+                    --fz-ombre-relief:
+                        inset 0 1px 2px #ffffff90,
+                        inset 0 -1px 3px #00000015,
+                        0 3px 5px #67491d50;                        
+                    --fz-rayon-panneau: 16px;
+                    --fz-rayon-carte: 10px;
+                    --fz-rayon-bouton: 8px;
+                    --fz-espacement: 8px;
+                    --fz-padding: 10px;
+                    --fz-police: Arial, sans-serif;
+                    /* Ajustement global des tailles de police */
+                    --fz-taille-ajustement: 1px;
+
+                    /* Tailles de police communes */
+                    --fz-taille-11: calc(11px + var(--fz-taille-ajustement));
+                    --fz-taille-12: calc(12px + var(--fz-taille-ajustement));
+                    --fz-taille-13: calc(13px + var(--fz-taille-ajustement));
+                    --fz-taille-14: calc(14px + var(--fz-taille-ajustement));
+                    --fz-taille-15: calc(15px + var(--fz-taille-ajustement));
+                    --fz-taille-16: calc(16px + var(--fz-taille-ajustement));
+                    --fz-taille-18: calc(18px + var(--fz-taille-ajustement));
+
+                    --fz-taille-texte: var(--fz-taille-14);                    
+                }
+                .fz-panneau,
+                .fz-panneau * { box-sizing: border-box; }
+                .fz-panneau[hidden],
+                .fz-panneau [hidden] { display: none !important; }
+                .fz-panneau {
+                    position: fixed;
+                    top: 4vh;
+                    left: 0;
+                    right: 0;
+                    margin: 0 auto;
+                    width: 92vw;
+                    max-width: 900px;
+                    max-height: 85vh;
+                    z-index: 2147483646;
+                    background: var(--fz-gradient-fond);
+                    color: var(--fz-texte);
+                    border: 2px solid var(--fz-bordure);
+                    border-radius: var(--fz-rayon-panneau);
+                    box-shadow: var(--fz-ombre-panneau);
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                    font: var(--fz-taille-texte) var(--fz-police);
+                    text-align: left;
+                }
+                .fz-entete {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                    padding: 10px 85px;
+                }
+                .fz-titre {
+                    background: var(--fz-gradient-titre);
+                    box-shadow: var(--fz-ombre-relief);
+                    text-shadow: var(--fz-ombre-texte);                    
+                    border: 1px solid var(--fz-bordure);
+                    border-radius: 30px;
+                    padding: 7px 20px;
+                    min-width: 55%;
+                    font-size: var(--fz-taille-15);
+                    font-weight: 600;
+                    text-align: center;
+                    text-transform: uppercase;
+                }
+                .fz-corps { overflow: auto; min-height: 0; padding: var(--fz-padding); }
+                .fz-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--fz-espacement); margin-bottom: 8px; }
+                .fz-panneau button.fz-bouton {
+                    background: var(--fz-gradient-bouton);
+                    box-shadow: var(--fz-ombre-relief);
+                    text-shadow: var(--fz-ombre-texte);
+                    transition: box-shadow 0.15s, transform 0.15s;                    
+                    color: var(--fz-texte);
+                    border: 1px solid var(--fz-bordure);
+                    border-radius: var(--fz-rayon-bouton);
+                    padding: 7px 12px;
+                    font: 600 var(--fz-taille-13) var(--fz-police);
+                    cursor: pointer;
+                }
+                .fz-panneau button.fz-bouton:hover { background: var(--fz-gradient-survol); }
+                .fz-panneau button.fz-bouton:active { box-shadow: var(--fz-ombre-creuse); transform: translateY(1px); }
+                .fz-fermer { position: absolute; right: 10px; }
+                .fz-cartes {
+                    display: grid;
+                    grid-template-columns: repeat(
+                        auto-fit, minmax(100px, 1fr)
+                    );
+                    gap: var(--fz-espacement);
+                    margin-bottom: 10px;
+                }
+                .fz-carte {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 4px;
+                    padding: 8px;
+                    background: var(--fz-gradient-carte);
+                    border: 1px solid #b89a5e;
+                    box-shadow: var(--fz-ombre-relief);
+                    text-shadow: var(--fz-ombre-texte);                    
+                    border-radius: var(--fz-rayon-carte);
+                    text-align: center;
+                }
+                .fz-carte strong { font-size: var(--fz-taille-16); font-weight: 600; }
+                .fz-detail { margin: 7px 0; border-radius: var(--fz-rayon-carte); overflow: hidden; box-shadow: 0 2px 4px #5b431c33; }
+                .fz-detail > summary { padding: 8px 12px;  background: var(--fz-gradient-carte); border-radius: var(--fz-rayon-carte); box-shadow: inset 0 1px 2px #ffffff80; text-shadow: var(--fz-ombre-texte); cursor: pointer; overflow-wrap: anywhere; }
+                .fz-detail[open] { box-shadow: inset 0 0 0 1px var(--fz-bordure); }
+                .fz-succes,
+                .fz-detail.fz-succes > summary {
+                    background: var(--fz-gradient-succes);
+                }
+                .fz-echec,
+                .fz-detail.fz-echec > summary {
+                    background: var(--fz-gradient-echec);
+                }
+                .fz-neutre,
+                .fz-detail.fz-neutre > summary {
+                    background: var(--fz-gradient-neutre);
+                }
+                .fz-panneau textarea.fz-saisie {
+                    width: 100%;
+                    min-height: 125px;
+                    resize: vertical;
+                    background: var(--fz-saisie);
+                    color: var(--fz-texte);
+                    border: 1px solid var(--fz-bordure);
+                    border-radius: var(--fz-rayon-carte);
+                    padding: 10px;
+                    font: var(--fz-taille-13) Consolas, monospace;
+                    box-shadow: var(--fz-ombre-creuse);
+                }
+                .fz-panneau table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: var(--fz-taille-12); }
+                .fz-panneau th,
+                .fz-panneau td { border-bottom: 1px solid var(--fz-bordure); padding: 6px; text-align: right; white-space: nowrap; }
+                .fz-panneau th:first-child,
+                .fz-panneau td:first-child { text-align: left; }
+                .fz-panneau small,
+                .fz-note { color: var(--fz-texte-secondaire); }
+                .fz-note { margin: 8px 0; }
+                .fz-alerte { color: var(--fz-alerte); }
+                @media (max-width: 650px) { .fz-panneau { top: 2vh; width: 96vw; max-height: 90vh; }
+                    .fz-entete { padding: 10px 75px 10px 8px; }
+                    .fz-titre { width: 100%; padding: 7px; font-size: var(--fz-taille-13); }
+                    .fz-carte { padding: 6px 3px; font-size: var(--fz-taille-12); }
+                    .fz-carte strong { font-size: var(--fz-taille-14); }
+                }
+            `;
+            document.head.append(style);
+        }
+    }
     class MenuOutils {
         static elements = new Map();
         static observateur = null;
@@ -102,14 +293,17 @@
                 viewBox="0 0 640 640"><!--!Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
                 <path d="M208.5 192C243.8 192 272.5 163.3 272.5 128C272.5 92.7 243.8 64 208.5 64C173.2 64 144.5 92.7 144.5 128C144.5 163.3 173.2 192 208.5 192zM192.5 544L192.5 448L224.5 448L224.5 544C224.5 561.7 238.8 576 256.5 576C274.2 576 288.5 561.7 288.5 544L288.5 351.8L309.4 385C318.8 400 338.6 404.4 353.5 395C368.4 385.6 372.9 365.8 363.5 350.9L323.6 287.6C298.8 248 255.3 224 208.5 224C161.7 224 118.2 248 93.3 287.6L53.4 351C44 366 48.5 385.7 63.4 395.1C78.3 404.5 98.1 400 107.5 385.1L128.4 351.9L128.4 544.1C128.4 561.8 142.7 576.1 160.4 576.1C178.1 576.1 192.4 561.8 192.4 544.1zM480.5 64L448.5 64C439.7 64 432.5 71.2 432.5 80C432.5 88.8 439.7 96 448.5 96L448.5 196.3C438.9 201.8 432.5 212.2 432.5 224L432.5 256C414.8 256 400.5 270.3 400.5 288L400.5 432C400.5 449.7 414.8 464 432.5 464L448.5 464L448.5 560C448.5 568.8 455.7 576 464.5 576L524 576C534.4 576 542 566.2 539.5 556.1L516.5 464L560.5 464C569.3 464 576.5 456.8 576.5 448L576.5 432C576.5 423.2 569.3 416 560.5 416L512.5 416L512.5 389.3L565.6 371.6C572.1 369.4 576.5 363.3 576.5 356.4L576.5 271.9C576.5 263.1 569.3 255.9 560.5 255.9L544.5 255.9C535.7 255.9 528.5 263.1 528.5 271.9L528.5 327.9L512.5 333.2L512.5 223.9C512.5 212.1 506.1 201.7 496.5 196.2L496.5 79.9C496.5 71.1 489.3 63.9 480.5 63.9z"/></svg>
             `,    
-            fz_boutonBilanTdC: `
+            /*fz_boutonBilanTdC: `
                 <path d="m12.99 6.74 1.93 3.44"/>
                 <path d="M19.136 12a10 10 0 0 1-14.271 0"/>
                 <path d="m21 21-2.16-3.84"/>
                 <path d="m3 21 8.02-14.26"/>
                 <circle cx="12" cy="5" r="2"/>
+            `,*/
+            fz_boutonBilanTdC: `
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chart-no-axes-combined preview-icon"><path d="M12 16v5"/><path d="M16 14.639V21"/><path d="M20 10.656V21"/><path d="m22 3-8.646 8.646a.5.5 0 0 1-.708 0L9.354 8.354a.5.5 0 0 0-.707 0L2 15"/><path d="M4 18.463V21"/><path d="M8 14.656V21"/></svg>
             `,
-            fz_boutonChasseurs: `
+            /*fz_boutonChasseurs: `
                 <svg xmlns="http://www.w3.org/2000/svg"
                     width="24" height="24"
                     viewBox="0 0 24 24"
@@ -122,7 +316,20 @@
                     <path d="M3 18h3v3" />
                     <path d="M16.5 20c1.576 -1.576 2.5 -4.095 2.5 -6.5c0 -4.81 -3.69 -8.5 -8.5 -8.5c-2.415 0 -4.922 .913 -6.5 2.5l12.5 12.5" />
                 </svg>
+            `,*/
+            fz_boutonChasseurs: `
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-target preview-icon"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
             `,
+            fz_boutonHorloge: `
+                <svg xmlns="http://www.w3.org/2000/svg" 
+                    width="24" height="24" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
+                    class="lucide lucide-clock preview-icon">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/></svg>
+            `,            
         };
         static icone(id, modele) {
             const dessin = this.icones[id];
@@ -149,11 +356,11 @@
             );
             return span;
         }              
-        static ajouter(id, libelle, action = null, href = '#') {
-            this.elements.set(id, {libelle, action, href});
+        static ajouter(id, libelle, action = null, href = '#', menu = 'menuAlliance') {
+            this.elements.set(id, { libelle, action, href, menu });
             this.initialiser();
             this.rendre();
-        }
+        }        
         static initialiser() {
             if (this.observateur) return;
             this.observateur = new MutationObserver(() => {
@@ -167,56 +374,157 @@
             });
         }
         static complet() {
-            const alliance = document.getElementById('menuAlliance');
-            if (!alliance) return false;
-            return [...this.elements.keys()].every((id) => {
+            return [...this.elements.entries()].every(([id, definition]) => {
+                const menu = document.getElementById(definition.menu);
                 const lien = document.getElementById(id);
-                return lien &&
-                    lien.parentElement?.parentElement === alliance;
+                return menu &&
+                    lien &&
+                    lien.parentElement?.parentElement === menu;
             });
-        }
+        }        
         static rendre() {
-            const alliance = document.getElementById('menuAlliance');
-            if (!alliance) return;
-            const modele = alliance.querySelector(
-                'a.boutonMembres, a[href="alliance.php?Membres"]'
-            );
-            if (!modele) return;
-            // Supprime les éventuels restes de l'ancien menu Outils.
             document.getElementById('fz_menuOutilsEntree')?.remove();
             document.getElementById('fz_menuOutilsListe')?.remove();
             document.getElementById('fz-style-menu-outils')?.remove();
             for (const [id, definition] of this.elements) {
+                const menu = document.getElementById(definition.menu);
+                if (!menu) continue;
+                const modele = definition.menu === 'menuAlliance'
+                    ? menu.querySelector(
+                        'a.boutonMembres, a[href="alliance.php?Membres"]'
+                    )
+                    : menu.querySelector('li > a');
+                if (!modele) continue;
                 let lien = document.getElementById(id);
                 if (!lien) {
                     const li = document.createElement('li');
                     lien = document.createElement('a');
                     lien.id = id;
                     lien.href = definition.href;
-                    lien.className = 'boutonMembres';
+                    lien.className = definition.menu === 'menuAlliance'
+                        ? 'boutonMembres'
+                        : modele.className;
                     lien.appendChild(this.icone(id, modele));
                     lien.appendChild(
                         document.createTextNode(definition.libelle)
                     );
                     li.appendChild(lien);
-                    alliance.appendChild(li);
+                    menu.appendChild(li);
                 }
                 if (!lien.dataset.fzActionInstallee) {
                     lien.dataset.fzActionInstallee = '1';
                     lien.addEventListener('click', (event) => {
                         const action = this.elements.get(id)?.action;
-                        if (action) {
-                            event.preventDefault();
-                            action();
-                        }
+                        if (action) { event.preventDefault(); action(); }
                     });
-                }                
+                }
             }
+        }        
+    }
+    class Horloge {
+        static ID = 'fz-clock';
+        static CLE_STOCKAGE = 'fz-horloge-active';
+        static FALLBACK_TOP = 95;
+        static GAP_TOP = 2;
+        static GAP_RIGHT = 22;
+        static clock = null;
+        static intervalle = null;
+        static active = true;
+        static init() {
+            if (window.top !== window.self) return;
+            if (document.getElementById(this.ID)) return;
+            this.active = localStorage.getItem(this.CLE_STOCKAGE) !== '0';
+            this.clock = document.createElement('div');
+            this.clock.id = this.ID;
+            this.clock.style.cssText = `
+                position: fixed;
+                top: ${this.FALLBACK_TOP}px;
+                right: clamp(4px, 1vw, 12px);
+                z-index: 999999;
+                font-family: Arial, sans-serif;
+                font-size: clamp(12px, 1.5vw, 14px);
+                font-weight: bold;
+                text-align: right;
+                white-space: nowrap;
+                pointer-events: none;
+                padding: 2px 3px;
+                background: #454737;
+                color: #ffffff;
+                border-radius: 5px;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+            `;
+            document.body.appendChild(this.clock);
+            MenuOutils.ajouter(
+                'fz_boutonHorloge',
+                'Horloge',
+                () => this.basculer(),
+                '#',
+                'menuFourmiliere'
+            );
+            this.appliquerEtat();
+            window.addEventListener('resize', () => this.place());
+            window.addEventListener('scroll', () => this.place(), {
+                passive: true
+            });
+            window.addEventListener('load', () => this.place());
+            setTimeout(() => this.place(), 1000);
+        }
+        static basculer() {
+            this.active = !this.active;
+            localStorage.setItem(
+                this.CLE_STOCKAGE,
+                this.active ? '1' : '0'
+            );
+            this.appliquerEtat();
+        }
+        static appliquerEtat() {
+            this.clock.style.display = this.active ? '' : 'none';
+            if (this.active) {
+                this.update();
+                this.place();
+                if (this.intervalle === null) { this.intervalle = setInterval( () => this.update(), 250 );
+                }
+            } else { clearInterval(this.intervalle); this.intervalle = null;
+            }
+        }
+        static place() {
+            if (!this.clock || !this.active) return;
+            const banner = document.getElementById('menu');
+            const centre = document.getElementById('centre');
+            const droite = document.getElementById('droite');
+            const largeur = document.documentElement.clientWidth;
+            // Positionnement vertical.
+            if (banner) {
+                const r = banner.getBoundingClientRect();
+                this.clock.style.top =
+                    Math.max(0, r.bottom) + this.GAP_TOP + 'px';
+            } else {
+                this.clock.style.top = this.FALLBACK_TOP + 'px';
+            }
+            // Positionnement horizontal.
+            if (droite && droite.getBoundingClientRect().width > 0) {
+                const r = droite.getBoundingClientRect();
+                this.clock.style.right =
+                    Math.max(0, largeur - r.left) + this.GAP_RIGHT + 'px';
+            } else if (centre) {
+                const r = centre.getBoundingClientRect();
+                this.clock.style.right =
+                    Math.max(0, largeur - r.right) + this.GAP_RIGHT + 'px';
+            } else {
+                this.clock.style.right = this.GAP_RIGHT + 'px';
+            }
+        }
+        static update() {
+            const d = new Date();
+            this.clock.textContent = [ d.getHours(), d.getMinutes(), d.getSeconds() ]
+                .map(n => String(n).padStart(2, '0'))
+                .join(':');
         }
     }
     class AnalyseRC {
         static init() {
             'use strict';
+            InterfaceGraphique.init();
             const estMessagerie = location.pathname === '/messagerie.php';            
             const NOMS = Commun.NOMS;
             const VIE = Commun.UNITES.VIE;
@@ -427,6 +735,7 @@
                 });
                 if (!rapports.length) {
                     destination.innerHTML = `<p class="rc-alerte">Aucun combat exploitable. ${echapper(erreurs.join(' ; ') || 'Ouvrez un message contenant un rapport complet ou collez son texte.')}</p>`;
+                    afficherSaisie(true);
                     return;
                 }
                 const total = (champ) => somme(rapports.map((r) => r[champ]));
@@ -437,14 +746,41 @@
                 const resumeTDP = calculsTDP
                     ? `${calculsTDP} calcul${calculsTDP > 1 ? 's' : ''} effectué${calculsTDP > 1 ? 's' : ''}`
                     : 'Non calculé';                
-                    const html = [`<div class="rc-bilan"><strong>${rapports.length} combat(s) analysé(s)</strong><span>Pertes attaquants : <b>${fmt(total('pertesAtt'))}</b></span><span>Pertes défenseurs : <b>${fmt(total('pertesDef'))}</b></span><span>TDP : <b>${resumeTDP}</b></span></div>`];
+                const html = [`
+                    <div class="fz-cartes rc-bilan">
+                        <div class="fz-carte">
+                            <span>Combats</span>
+                            <strong>
+                                ${rapports.length} analysé${rapports.length > 1 ? 's' : ''}
+                            </strong>
+                        </div>
+                        <div class="fz-carte">
+                            <span>Pertes attaquants</span>
+                            <strong>${fmt(total('pertesAtt'))}</strong>
+                        </div>
+                        <div class="fz-carte">
+                            <span>Pertes défenseurs</span>
+                            <strong>${fmt(total('pertesDef'))}</strong>
+                        </div>
+                    </div>
+                `];                
                 for (const r of rapports) {
                     const nA = somme(r.a), nD = somme(r.d);
                     const defenses = calculerDefenses(r);
                     const hofA = stat(r.a, TEMPS) - stat(r.finAtt, TEMPS);
                     const hofD = stat(r.d, TEMPS) - stat(r.finDef, TEMPS);
-                    html.push(`<details class="rc-combat"><summary><strong>${echapper(r.issue)}</strong> — ${echapper(r.attaquant)} → ${echapper(r.cible)} (${echapper(r.lieu)})</summary>
-                        <div class="rc-interieur">
+                    const couleur = /gagnée/i.test(r.issue)
+                        ? 'fz-succes'
+                        : /perdue/i.test(r.issue)
+                            ? 'fz-echec'
+                            : 'fz-neutre';
+                    html.push(`<details class="rc-combat fz-detail ${couleur}">
+                        <summary>
+                            <strong>${echapper(r.issue)}</strong> :
+                            ${echapper(r.attaquant)} → ${echapper(r.cible)}
+                            (${echapper(r.lieu)})
+                        </summary>                        
+                    <div class="rc-interieur">
                         ${r.occupation ? '<p>Armée d’occupation présente : le propriétaire de la fourmilière n’est pas nécessairement le défenseur réel.</p>' : ''}
                         <div class="rc-chiffres"><div><small>Attaquants initiaux</small><b>${fmt(nA)}</b><small>Pertes : ${fmt(r.pertesAtt)} (${nA ? (r.pertesAtt * 100 / nA).toFixed(2) : 0} %)</small></div>
                         <div><small>Défenseurs initiaux</small><b>${fmt(nD)}</b><small>Pertes : ${fmt(r.pertesDef)} (${nD ? (r.pertesDef * 100 / nD).toFixed(2) : 0} %)</small></div></div>
@@ -470,9 +806,24 @@
                         <details><summary>Détail des tours (${Math.ceil(r.tours.length / 2)})</summary><table><thead><tr><th>Camp infligeant</th><th>Dégâts</th><th>Bonus</th><th>Unités tuées</th></tr></thead><tbody>${r.tours.map((t) => `<tr><td>${t.camp === 'att' ? 'Attaquant' : 'Défenseur'}</td><td>${fmt(t.base)}</td><td>${fmt(t.bonus)}</td><td>${fmt(t.pertes)}</td></tr>`).join('')}</tbody></table></details>
                         </div></details>`);
                 }
+                html.push(`
+                    <div class="rc-resume-tdp">
+                        TDP : <b>${resumeTDP}</b>
+                    </div>
+                `);
                 html.push(bilanTDP);
-                if (erreurs.length) html.push(`<p class="rc-alerte">${echapper(erreurs.join(' ; '))}</p>`);
+                if (erreurs.length) {
+                    html.push(`
+                        <p class="fz-alerte">
+                            ${echapper(erreurs.join(' ; '))}
+                        </p>
+                    `);
+                }
                 destination.innerHTML = html.join('');
+                destination.querySelectorAll('.rc-tdp').forEach((element) => {
+                    element.classList.add('fz-detail');
+                });
+                afficherSaisie(false);                
             }
             function texteMessages() {
                 // Les lignes de conversation sont des FRÈRES des lignes message_,
@@ -499,59 +850,107 @@
                         && /Troupes en d[eé]fense\s*:/i.test(texte));
                 return rapports.join('\n\n');
             }
+            function afficherSaisie(visible, vider = false) {
+                const saisie = document.getElementById('rc-saisie');
+                const texte = document.getElementById('rc-texte');
+                const actions = document.getElementById('rc-actions-resultats');
+                const resultats = document.getElementById('rc-resultats');
+                saisie.hidden = !visible;
+                actions.hidden = visible;
+                if (vider) { texte.value = ''; resultats.innerHTML = ''; }
+            }
             function ouvrir() {
                 const p = document.getElementById('rc-panneau');
                 p.hidden = false;
             }
             const style = document.createElement('style');
             style.textContent = `
-                #fz_boutonAnalyseRC a{cursor:pointer}
-                #rc-panneau[hidden] {display:none!important}
-                #rc-panneau {position:fixed;top:4vh;left:0;right:0;margin:0 auto;width:92vw;max-width:900px;max-height:67vh;z-index:2147483646;background:#f7e8b8;color:#30200d;border:2px solid #a98d43;border-radius:7px;box-shadow:0 15px 70px #000b;display:flex;flex-direction:column;overflow:hidden;font:14px Arial,sans-serif}
-                #rc-panneau * {box-sizing:border-box}
-                #rc-entete {display:flex;align-items:center;justify-content:space-between;padding:11px 16px;background:linear-gradient(#e6c46a,#ae7826);border-bottom:2px solid #a98d43}
-                #rc-entete strong {font-size:18px}
-                #rc-fermer {background:transparent;border:0;color:#382c16;font-size:24px;cursor:pointer}
-                #rc-corps {overflow:auto;padding:16px}
-                #rc-actions {display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
-                #rc-panneau button.rc-action {background:linear-gradient(#ffe9a4,#c99a42);color:#382c16;border:1px solid #a98d43;border-radius:4px;padding:9px 12px;font-weight:700;cursor:pointer}
-                #rc-panneau textarea {width:100%;min-height:125px;resize:vertical;background:#fffaf0;color:#382c16;border:1px solid #a98d43;border-radius:8px;padding:10px;font:13px Consolas,monospace}
-                #rc-panneau .rc-note {color:#725d34;margin:8px 0}
-                #rc-panneau .rc-bilan {display:flex;gap:16px;flex-wrap:wrap;align-items:center;padding:13px;background:#f1d994;border-radius:10px;margin:14px 0}
-                #rc-panneau .rc-combat {margin:12px 0;border:1px solid #b99d53;border-radius:10px;overflow:hidden}
-                #rc-panneau .rc-combat>summary {cursor:pointer;background:linear-gradient(#f6d782,#c49138);padding:12px}
-                #rc-panneau .rc-interieur > details {margin-top:16px}
-                #rc-panneau .rc-chiffres {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-                #rc-panneau .rc-chiffres>div {display:flex;flex-direction:column;gap:5px;padding:10px;background:#f1d994;border-radius:8px}
-                #rc-panneau .rc-chiffres b {font-size:19px}
-                #rc-panneau small {color:#725d34}
-                #rc-panneau button.rc-action:hover {background:#e9d18d}
-                #rc-panneau table {width:100%;border-collapse:collapse;margin:12px 0;font-size:12px}
-                #rc-panneau th,#rc-panneau td {border-bottom:1px solid #c5aa69;padding:7px;text-align:right;white-space:nowrap}
-                #rc-panneau th:first-child,#rc-panneau td:first-child {text-align:left}
-                #rc-panneau .rc-niveaux {display:flex;flex-direction:column;gap:9px;margin:12px 0}
-                #rc-panneau .rc-niveau-camp {padding:10px 13px;border-radius:6px;border:1px solid #9b702b}
-                #rc-panneau .rc-camp-att {background:#f5dda0;border-left:5px solid #ad6921}
-                #rc-panneau .rc-camp-def {background:#e7d4a2;border-left:5px solid #627c39}
-                #rc-panneau .rc-niveau-camp h4 {margin:0 0 8px;color:#34220d;font-size:15px}
-                #rc-panneau .rc-niveau-camp p {margin:5px 0}
-                #rc-panneau .rc-armee-restante {padding:10px 12px;background:#e8c77e;border-left:4px solid #8b5a17;border-radius:5px;line-height:1.6;overflow-wrap:anywhere}
-                #rc-panneau .rc-alerte {color:#9b2929}
-                @media(max-width:650px) {#rc-panneau {top:2vh;width:96vw}#rc-panneau .rc-chiffres {grid-template-columns:1fr}}
-                #rc-panneau #rc-fermer { font: 700 13px Arial, sans-serif; color: #382c16; background: linear-gradient(#ffe9a4, #c99a42); border: 1px solid #a98d43; border-radius: 4px; padding: 9px 12px; cursor: pointer; }
-                #rc-panneau #rc-fermer:hover { background: #e9d18d; }            
-                `;
-            document.head.append(style);
+                #rc-panneau .rc-bilan { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+                #rc-panneau .rc-interieur { padding: 10px; background: var(--fz-fond); overflow-x: auto; }
+                #rc-panneau .rc-interieur > details { margin-top: 10px; }
+                #rc-panneau .rc-chiffres { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--fz-espacement); }
+                #rc-panneau .rc-chiffres > div { display: flex; flex-direction: column; gap: 4px; padding: var(--fz-padding); background: var(--fz-carte); border-radius: var(--fz-rayon-carte); }
+                #rc-panneau .rc-chiffres b { font-size: var(--fz-taille-16); }
+                #rc-panneau .rc-niveaux { display: flex; flex-direction: column; gap: var(--fz-espacement); margin: 10px 0; }
+                #rc-panneau .rc-niveau-camp { padding: var(--fz-padding); border-radius: var(--fz-rayon-carte); background: var(--fz-carte); }
+                #rc-panneau .rc-camp-att { border-left: 4px solid var(--fz-echec); }
+                #rc-panneau .rc-camp-def { border-left: 4px solid var(--fz-succes); }
+                #rc-panneau .rc-niveau-camp h4 { margin: 0 0 6px; color: var(--fz-texte); font-size: var(--fz-taille-14); }
+                #rc-panneau .rc-niveau-camp p { margin: 4px 0; }
+                #rc-panneau .rc-armee-restante { padding: var(--fz-padding); background: var(--fz-carte); border-radius: var(--fz-rayon-carte); line-height: 1.6; overflow-wrap: anywhere; }
+                #rc-panneau .rc-alerte { color: var(--fz-alerte); }
+                #rc-panneau .rc-note { color: var(--fz-texte-secondaire); margin: 8px 0; }
+                #rc-panneau .rc-resume-tdp { text-align: center; padding: 6px; }
+                #rc-panneau #rc-bilan-tdp h3 { margin: 10px 0 6px; font-size: var(--fz-taille-14); color: var(--fz-texte); }
+                #rc-panneau #rc-actions-resultats { margin-top: 12px; margin-bottom: 0; }
+                @media (max-width: 650px) { #rc-panneau .rc-chiffres { grid-template-columns: 1fr; } }
+            `;
+            document.head.append(style);            
             MenuOutils.ajouter('fz_boutonAnalyseRC', 'Analyse RC', ouvrir);
             const panneau = document.createElement('section');
             panneau.id = 'rc-panneau';
+            panneau.className = 'fz-panneau';
             panneau.hidden = true;
-            panneau.innerHTML = `<div id="rc-entete"><strong>Analyse de combats</strong><button type="button" id="rc-fermer">Fermer</button></div>
-                <div id="rc-corps"><div id="rc-actions"><button class="rc-action" id="rc-messagerie">Analyser les messages affichés</button><button class="rc-action" id="rc-coller">Analyser le texte collé</button></div>
-                <textarea id="rc-texte" placeholder="Collez ici un ou plusieurs rapports de combat complets…"></textarea>
-                ${estMessagerie ? '<p class="rc-note">Messagerie : ouvrez les conversations à analyser. Tous les rapports de combat visibles dans ces conversations seront récupérés, même si une conversation contient plusieurs combats.</p>' : ''}
-                <div id="rc-resultats"></div></div>`;
+            panneau.innerHTML = `
+                <div id="rc-entete" class="fz-entete">
+                    <strong class="fz-titre">
+                        Analyse RC
+                    </strong>
+                    <button type="button"
+                        id="rc-fermer"
+                        class="fz-bouton fz-fermer">
+                        Fermer
+                    </button>
+                </div>
+                <div id="rc-corps" class="fz-corps">
+                    <div id="rc-saisie">
+                        <div id="rc-actions" class="fz-actions">
+                            <button class="fz-bouton"
+                                id="rc-messagerie">
+                                Analyser les messages affichés
+                            </button>
+                            <button class="fz-bouton"
+                                id="rc-coller">
+                                Analyser le texte collé
+                            </button>
+                        </div>
+                        <textarea
+                            id="rc-texte"
+                            class="fz-saisie"
+                            placeholder="Collez ici un ou plusieurs rapports de combat complets…">
+                        </textarea>
+                        ${estMessagerie ? `
+                            <p class="fz-note">
+                                Messagerie : ouvrez les conversations à analyser.
+                                Tous les rapports de combat visibles dans ces
+                                conversations seront récupérés, même si une
+                                conversation contient plusieurs combats.
+                            </p>
+                        ` : ''}
+                    </div>
+                    <div id="rc-resultats"></div>
+                    <div id="rc-actions-resultats"
+                        class="fz-actions"
+                        hidden>
+                        <button class="fz-bouton"
+                            id="rc-modifier">
+                            Modifier la saisie
+                        </button>
+                        <button class="fz-bouton"
+                            id="rc-nouveau">
+                            Nouvelle analyse
+                        </button>
+                    </div>
+                </div>
+            `;
             document.body.append(panneau);
+            document.getElementById('rc-modifier').onclick = () => {
+                afficherSaisie(true);
+            };
+            document.getElementById('rc-nouveau').onclick = () => {
+                afficherSaisie(true, true);
+            };
+            document.getElementById('rc-texte').value = '';            
             document.getElementById('rc-messagerie').style.display = estMessagerie ? '' : 'none';
             document.getElementById('rc-fermer').onclick = () => { panneau.hidden = true; };
             document.getElementById('rc-coller').onclick = () => afficherResultats(decouper(document.getElementById('rc-texte').value));
@@ -581,8 +980,10 @@
                 }
             );
             if (!pageForum) return;
+            if (!pageForum) return;
             if (!Commun.pseudo) return;   // pas connecté
-            const parseNum = Commun.nombre;
+            InterfaceGraphique.init();
+            const parseNum = Commun.nombre;            
             function monthIdx(t) {
                 t = t.toLowerCase().replace('.', '');
                 if (t.indexOf('juin') === 0) return 5;
@@ -745,48 +1146,149 @@
             var fmt = function (n) { return n.toLocaleString('fr-FR'); };
             function signed(n) { return n === 0 ? '0' : (n > 0 ? '+' : '−') + fmt(Math.abs(n)); }
             function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-            /* ---------- Style (préfixe tdc- pour ne pas heurter le CSS du site) ---------- */
+            /* ---------- Styles spécifiques au Bilan TdC ---------- */
             var css = `
-                #tdc-panel, #tdc-panel * { box-sizing: border-box; }
-                #tdc-panel { position:fixed; top:4vh; left:0; right:0; margin:0 auto; width:92vw; max-width:900px; max-height:67vh; z-index:2147483646; background:#f7e8b8; color:#30200d; border:2px solid #a98d43; border-radius:7px; box-shadow:0 15px 70px #000b; display:none; flex-direction:column; font:14px Arial,sans-serif; text-align:left; overflow:hidden; }
-                #tdc-panel .tdc-head { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; padding:11px 16px; background:linear-gradient(#e6c46a,#ae7826); border-bottom:2px solid #a98d43; }
-                #tdc-panel .tdc-head strong { font-size:18px; }
-                #tdc-panel .tdc-body { overflow:auto; min-height:0; padding:16px; display:flex; flex-direction:column; gap:16px; }
-                #tdc-panel button { font:700 13px Arial,sans-serif; color:#382c16; background:linear-gradient(#ffe9a4,#c99a42); border:1px solid #a98d43; border-radius:4px; padding:9px 12px; cursor:pointer; }
-                #tdc-panel button:hover { background:#e9d18d; }
-                #tdc-panel h3 { margin:0 0 6px; font-size:15px; color:#34220d; }
-                #tdc-panel .tdc-tiles { display:flex; gap:16px; flex-wrap:wrap; }
-                #tdc-panel .tdc-tile { background:#f1d994; border-left:5px solid #ad6921; padding:10px 13px; border-radius:6px; min-width:150px; }
-                #tdc-panel .tdc-tile.b { border-left-color:#627c39; }
-                #tdc-panel .tdc-tile.v { border-left-color:#a5432d; }
-                #tdc-panel .tdc-k { font-size:14px; font-weight:700; color:#725d34; text-transform:uppercase; letter-spacing:.05em; }
-                #tdc-panel .tdc-n { font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; }
-                #tdc-panel .tdc-tile.net .tdc-n { font-size:26px; }
-                #tdc-panel .tdc-u { font-size:14px; color:#725d34; }
-                #tdc-panel .tdc-scroll { overflow-x:auto; }
-                #tdc-panel table { border-collapse:collapse; width:100%; font-size:12px; font-variant-numeric:tabular-nums; }
-                #tdc-panel th, #tdc-panel td { text-align:right; padding:7px; border-bottom:1px solid #c5aa69; white-space:nowrap; background:none; color:inherit; }
-                #tdc-panel th:first-child, #tdc-panel td:first-child { text-align:left; }
-                #tdc-panel th { font-size:12px; color:#725d34; }
-                #tdc-panel .b { color:#486d30; }
-                #tdc-panel .v { color:#9b2929; }
-                #tdc-panel tfoot td { font-weight:700; border-top:2px solid #a98d43; }
-                #tdc-panel .tdc-post { display:flex; gap:8px; align-items:flex-start; padding:8px; border-bottom:1px solid #c5aa69; }
-                #tdc-panel .tdc-post.off { opacity:.5; }
-                #tdc-panel .tdc-note { font-size:12px; color:#725d34; }
-                #tdc-panel .tdc-note.warn { color:#9b2929; }
-                #tdc-panel .tdc-muted { color:#725d34; }
-                #tdc-panel .tdc-phrase { font-weight:700; font-size:15px; background:#e8c77e; padding:10px 12px; border-radius:5px; }
-                #tdc-panel .tdc-sub { font-size:11px; color:#725d34; font-weight:400; }
-                #tdc-panel details { border:1px solid #b99d53; border-radius:8px; padding:10px 12px; }
-                #tdc-panel summary { cursor:pointer; font-weight:700; font-size:15px; padding:2px 0 8px; }
-                #tdc-panel .tdc-nous select { font:inherit; font-size:14px; margin-left:6px; padding:4px 8px; background:#fffaf0; color:#382c16; border:1px solid #a98d43; border-radius:4px; }
-                .tdc-k .tdc-titre-topic { text-transform: none; }
-                #tdc-panel .tdc-affiliation { margin-left:5px; padding:3px; border-radius:4px; }                    
+                #tdc-panel .tdc-body {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+                #tdc-panel h3 {
+                    margin: 0 0 6px;
+                    font-size: var(--fz-taille-14);
+                    color: var(--fz-texte);
+                }
+                #tdc-panel .tdc-topic {
+                    text-align: center;
+                    font-weight: 700;
+                    font-size: var(--fz-taille-14);
+                    overflow-wrap: anywhere;
+                    margin-bottom: 4px;
+                }
+                #tdc-panel .tdc-tiles {
+                    grid-template-columns: repeat(3, minmax(0, 1fr));
+                    margin-bottom: 0;
+                }
+                #tdc-panel .tdc-tile {
+                    min-width: 0;
+                    gap: 5px;
+                }
+                #tdc-panel .tdc-k {
+                    font-size: var(--fz-taille-13);
+                    font-weight: 600;
+                }
+                #tdc-panel .tdc-n {
+                    font-size: var(--fz-taille-18);
+                    font-weight: 700;
+                    font-variant-numeric: tabular-nums;
+                    overflow-wrap: anywhere;
+                    max-width: 100%;
+                }
+                #tdc-panel .tdc-u {
+                    font-size: var(--fz-taille-12);
+                }
+                #tdc-panel .tdc-internes {
+                    text-align: center;
+                    font-size: var(--fz-taille-12);
+                    color: var(--fz-texte-secondaire);
+                }
+                #tdc-panel .tdc-scroll {
+                    overflow-x: auto;
+                }
+                #tdc-panel table {
+                    font-variant-numeric: tabular-nums;
+                }
+                #tdc-panel th,
+                #tdc-panel td {
+                    background: none;
+                    color: inherit;
+                }
+                #tdc-panel th {
+                    color: var(--fz-texte-secondaire);
+                }
+                #tdc-panel .b {
+                    color: #305e20;
+                }
+                #tdc-panel .v {
+                    color: var(--fz-alerte);
+                }
+                #tdc-panel tfoot td {
+                    font-weight: 700;
+                    border-top: 2px solid var(--fz-bordure);
+                }
+                #tdc-panel .tdc-post {
+                    display: flex;
+                    gap: var(--fz-espacement);
+                    align-items: flex-start;
+                    padding: 8px;
+                    border-bottom: 1px solid var(--fz-bordure);
+                }
+                #tdc-panel .tdc-post.off {
+                    opacity: .5;
+                }
+                #tdc-panel .tdc-note,
+                #tdc-panel .tdc-muted {
+                    font-size: var(--fz-taille-12);
+                    color: var(--fz-texte-secondaire);
+                }
+                #tdc-panel .tdc-note.warn {
+                    color: var(--fz-alerte);
+                }
+                #tdc-panel .tdc-phrase {
+                    font-weight: 700;
+                    font-size: var(--fz-taille-14);
+                    text-align: center;
+                    padding: var(--fz-padding);
+                    background: var(--fz-gradient-carte);
+                    border-radius: var(--fz-rayon-carte);
+                    box-shadow: var(--fz-ombre-relief);
+                }
+                #tdc-panel .tdc-sub {
+                    font-size: var(--fz-taille-11);
+                    color: var(--fz-texte-secondaire);
+                    font-weight: 400;
+                }
+                #tdc-panel .tdc-interieur {
+                    padding: var(--fz-padding);
+                    background: var(--fz-fond);
+                    overflow-x: auto;
+                }
+                #tdc-panel .fz-detail {
+                    margin: 0;
+                    flex-shrink: 0;
+                }
+                #tdc-panel select {
+                    font: inherit;
+                    font-size: var(--fz-taille-13);
+                    margin-left: 5px;
+                    padding: 5px 8px;
+                    background: var(--fz-saisie);
+                    color: var(--fz-texte);
+                    border: 1px solid var(--fz-bordure);
+                    border-radius: var(--fz-rayon-bouton);
+                    box-shadow: var(--fz-ombre-creuse);
+                }
+                #tdc-panel input[type="checkbox"] {
+                    accent-color: var(--fz-succes);
+                }
+                #tdc-panel .tdc-actions {
+                    padding: 10px;
+                    margin: 0;
+                    flex-shrink: 0;
+                }
+                @media (max-width: 650px) {
+                    #tdc-panel .tdc-n {
+                        font-size: var(--fz-taille-13);
+                    }
+                    #tdc-panel .tdc-k,
+                    #tdc-panel .tdc-u {
+                        font-size: var(--fz-taille-11);
+                    }
+                }
             `;
             var st = document.createElement('style');
             st.textContent = css;
-            document.head.appendChild(st);
+            document.head.appendChild(st);            
             /* ---------- Lecture des posts affichés sur la page ---------- */
             function pageText() {
                 const root = document.getElementById('forum');
@@ -834,21 +1336,35 @@
                     return '<div class="tdc-scroll"><table><thead><tr><th>' + label + '</th><th>Net</th><th>Floods</th></tr></thead><tbody>' + rows +
                         '</tbody><tfoot><tr><td>Total</td><td class="' + (tn < 0 ? 'v' : 'b') + '">' + signed(tn) + '</td><td>' + tf + '</td></tr></tfoot></table></div>';
                 }
-                function det(k, titre, contenu) { return '<details data-k="' + k + '"' + (openState[k] ? ' open' : '') + '><summary>' + titre + '</summary>' + contenu + '</details>'; }
+                function det(k, titre, contenu) {
+                    return `
+                        <details class="fz-detail"
+                            data-k="${k}"${openState[k] ? ' open' : ''}>
+                            <summary>${titre}</summary>
+                            <div class="tdc-interieur">
+                                ${contenu}
+                            </div>
+                        </details>
+                    `;
+                }                
                 var select = multi ? '<div class="tdc-nous">Notre alliance : <select id="tdc-nous">' + groups.map(function (g) {
                 return '<option value="' + esc(g) + '"' + (g === nous ? ' selected' : '') + '>' + esc(etiquette(g)) + '</option>';
                 }).join('') + '</select><div class="tdc-note">Le sens des mouvements est déterminé par les alliances des joueurs identifiés.</div></div>' : '';
-                const choixInconnus = (p) => p.entries.map((e) => {
-                    const cle = Commun.norm(e.target);
-                    if (!cle || auteurs.has(cle)) return '';
-                    const valeur = corrections.get(cle) || '';
-                    return '<div class="tdc-note">Alliance de ' + esc(e.target) +
-                        ' (non identifié parmi les auteurs) : <select class="tdc-affiliation" data-pseudo="' + esc(e.target) + '">' +
-                        '<option value=""' + (!valeur ? ' selected' : '') + '>Inconnue</option>' +
-                        '<option value="nous"' + (valeur === nous ? ' selected' : '') + '>Notre alliance</option>' +
-                        '<option value="autre"' + (valeur === '__autre__' ? ' selected' : '') + '>Autre alliance</option>' +
-                        '</select></div>';
-                }).join('');
+                const choixInconnus = (p) => {
+                    const dejaVus = new Set();
+                    return p.entries.map((e) => {
+                        const cle = Commun.norm(e.target);
+                        if (!cle || auteurs.has(cle) || dejaVus.has(cle)) return '';
+                        dejaVus.add(cle);
+                        const valeur = corrections.get(cle) || '';
+                        return '<div class="tdc-note">Alliance de ' + esc(e.target) +
+                            ' (non identifié parmi les auteurs) : <select class="tdc-affiliation" data-pseudo="' + esc(e.target) + '">' +
+                            '<option value=""' + (!valeur ? ' selected' : '') + '>Inconnue</option>' +
+                            '<option value="nous"' + (valeur === nous ? ' selected' : '') + '>Notre alliance</option>' +
+                            '<option value="autre"' + (valeur === '__autre__' ? ' selected' : '') + '>Autre alliance</option>' +
+                            '</select></div>';
+                    }).join('');
+                };                
                 var list = posts.length ? posts.map(function (p, i) {
                 var ok = p.entries.length > 0, on = ok && !excluded.has(i);
                 var what = ok ? p.entries.map(function (e) {
@@ -867,18 +1383,49 @@
                     '<tr><td>' + esc(nomNous) + ' <span class="tdc-sub">(nous)</span></td><td class="b"><strong>' + signed(t.butin) + '</strong></td><td>' + t.nButin + '</td></tr>' +
                     '<tr><td>' + esc(nomAutres) + '</td><td class="v"><strong>' + signed(-t.vol) + '</strong></td><td>' + t.nVol + '</td></tr>' +
                     '</tbody><tfoot><tr><td>Bilan</td><td class="' + (t.net < 0 ? 'v' : 'b') + '">' + signed(t.net) + '</td><td>' + t.floods + '</td></tr></tfoot></table></div></div>' : '';
-                const titreTopic = document.querySelector('#forum > h2')?.textContent.trim() || '';              
-                body.innerHTML =
-                    '<div class="tdc-tiles"><div class="tdc-tile net ' + (t.net < 0 ? 'v' : 'b') + '">' +
-                        '<div class="tdc-k">Bilan du Topic : <span class="tdc-titre-topic">' + esc(titreTopic) + '</span></div>' +
-                        '<div class="tdc-n">' + signed(t.net) + '</div>' +
-                        '<div class="tdc-u">' +
-                            ' · ' + t.floods + ' floods' +
-                            (t.nInternes > 0 ? '<div> · Internes exclus : ' + t.nInternes + ' (' + fmt(t.internes) + ' cm²)</div>' : '') +
-                            '<div> · Pris : ' + signed(t.butin) + '</div>' +
-                            '<div> · Perdu : ' + signed(-t.vol) + '</div>' +
-                        '</div>' +
-                    '</div></div>' +
+                const titreTopic = document.querySelector('#forum > h2')
+                    ?.textContent.trim() || '';
+                const couleurBilan = t.net < 0
+                    ? 'v'
+                    : t.net > 0
+                        ? 'b'
+                        : '';
+                body.innerHTML = `
+                    <div class="tdc-topic">
+                        Bilan du Topic : ${esc(titreTopic)}
+                    </div>
+                    <div class="fz-cartes tdc-tiles">
+                        <div class="fz-carte tdc-tile fz-succes">
+                            <div class="tdc-k">Terrain pris</div>
+                            <div class="tdc-n">${signed(t.butin)}</div>
+                            <div class="tdc-u">
+                                ${t.nButin} flood${t.nButin > 1 ? 's' : ''}
+                            </div>
+                        </div>
+                        <div class="fz-carte tdc-tile fz-echec">
+                            <div class="tdc-k">Terrain perdu</div>
+                            <div class="tdc-n">${signed(-t.vol)}</div>
+                            <div class="tdc-u">
+                                ${t.nVol} flood${t.nVol > 1 ? 's' : ''}
+                            </div>
+                        </div>
+                        <div class="fz-carte tdc-tile">
+                            <div class="tdc-k">Bilan net</div>
+                            <div class="tdc-n ${couleurBilan}">
+                                ${signed(t.net)}
+                            </div>
+                            <div class="tdc-u">
+                                ${t.floods} flood${t.floods > 1 ? 's' : ''}
+                            </div>
+                        </div>
+                    </div>
+                    ${t.nInternes > 0 ? `
+                        <div class="tdc-internes">
+                            Internes exclus : ${t.nInternes}
+                            (${fmt(t.internes)} cm²)
+                        </div>
+                    ` : ''}
+                    ` +                    
                     (phrase ? '<div class="tdc-phrase">' + esc(phrase) + '</div>' : '') +                
                     select + camps +
                     det('joueurs', 'Par auteur du post', '<p class="tdc-note">Le membre qui a écrit le post (ex. Guitube).</p>' + table(last.players, 'Auteur', function (r) { return esc(r.name) + (multi ? ' <span class="tdc-sub">' + esc(etiquette(r.tag)) + '</span>' : ''); })) +
@@ -923,13 +1470,37 @@
             function openPanel() {
                 var p = document.getElementById('tdc-panel');
                 if (!p) {
-                p = document.createElement('div');
-                p.id = 'tdc-panel';
-                p.innerHTML = '<div class="tdc-head"><strong>Bilan TdC</strong><span>' +
-                    '<button type="button" id="tdc-refresh">Actualiser</button> ' +
-                    '<button type="button" id="tdc-copy">Copier Bilan</button> ' +
-                    '<button type="button" id="tdc-close">Fermer</button></span></div><div class="tdc-body" id="tdc-body"></div>';
-                document.body.appendChild(p);
+                    p = document.createElement('div');
+                    p.id = 'tdc-panel';
+                    p.className = 'fz-panneau';
+                    p.innerHTML = `
+                        <div class="fz-entete">
+                            <strong class="fz-titre">
+                                Bilan TdC
+                            </strong>
+                            <button type="button"
+                                id="tdc-close"
+                                class="fz-bouton fz-fermer">
+                                Fermer
+                            </button>
+                        </div>
+                        <div id="tdc-body"
+                            class="fz-corps tdc-body">
+                        </div>
+                        <div class="fz-actions tdc-actions">
+                            <button type="button"
+                                id="tdc-refresh"
+                                class="fz-bouton">
+                                Actualiser
+                            </button>
+                            <button type="button"
+                                id="tdc-copy"
+                                class="fz-bouton">
+                                Copier Bilan
+                            </button>
+                        </div>
+                    `;
+                    document.body.appendChild(p);                
                 document.getElementById('tdc-refresh').addEventListener('click', refresh);
                 document.getElementById('tdc-copy').addEventListener('click', copyTable);
                 document.getElementById('tdc-close').addEventListener('click', function () { p.style.display = 'none'; });
@@ -1560,7 +2131,6 @@
                 fs.appendChild(contenuFlood);
                 document.getElementById("fz_toggleFlood").addEventListener("click", function() {
                     var ouvert = contenuFlood.style.display !== "none";
-
                     contenuFlood.style.display = ouvert ? "none" : "";
                     document.getElementById("fz_flecheFlood").textContent = ouvert ? "▶" : "▼";
                 });
@@ -2165,4 +2735,5 @@
     Chasseurs.init();
     ConvoiMax.init();
     TempsTrajet.init();
+    Horloge.init();
 })();
