@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Fourmizzz - Outils unifiés test
+// @name         Fourmizzz - Outils unifiés test2
 // @namespace    fourmizzz-outils-reunis
-// @version      1.1.7
+// @version      1.1.6
 // @updateURL    https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils-test.user.js
 // @downloadURL  https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils-test.user.js
 // @description  Analyse RC avec bilan TDP automatique, Bilan TdC, Chasseurs, ConvoiMax, Horloge.
@@ -10,6 +10,13 @@
 // @noframes
 // @grant        none
 // ==/UserScript==
+/*
+ * Fourmizzz - Outils unifiés
+ * Projet réalisé à l'initiative de darf.
+ * Développement : darf & laig.
+ * Certaines fonctions sont reprises ou adaptées
+ * du script Outiiil.js.
+ */
 (function () {
     "use strict";
     class Commun {
@@ -140,7 +147,6 @@
                     --fz-police: Arial, sans-serif;
                     /* Ajustement global des tailles de police */
                     --fz-taille-ajustement: 1px;
-
                     /* Tailles de police communes */
                     --fz-taille-11: calc(11px + var(--fz-taille-ajustement));
                     --fz-taille-12: calc(12px + var(--fz-taille-ajustement));
@@ -149,7 +155,6 @@
                     --fz-taille-15: calc(15px + var(--fz-taille-ajustement));
                     --fz-taille-16: calc(16px + var(--fz-taille-ajustement));
                     --fz-taille-18: calc(18px + var(--fz-taille-ajustement));
-
                     --fz-taille-texte: var(--fz-taille-14);                    
                 }
                 .fz-panneau,
@@ -288,7 +293,7 @@
         static elements = new Map();
         static observateur = null;
         static icones = {
-            fz_boutonAnalyseRC: `
+            fz_boutonRc: `
                 <svg xmlns="http://www.w3.org/2000/svg" 
                 viewBox="0 0 640 640"><!--!Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
                 <path d="M208.5 192C243.8 192 272.5 163.3 272.5 128C272.5 92.7 243.8 64 208.5 64C173.2 64 144.5 92.7 144.5 128C144.5 163.3 173.2 192 208.5 192zM192.5 544L192.5 448L224.5 448L224.5 544C224.5 561.7 238.8 576 256.5 576C274.2 576 288.5 561.7 288.5 544L288.5 351.8L309.4 385C318.8 400 338.6 404.4 353.5 395C368.4 385.6 372.9 365.8 363.5 350.9L323.6 287.6C298.8 248 255.3 224 208.5 224C161.7 224 118.2 248 93.3 287.6L53.4 351C44 366 48.5 385.7 63.4 395.1C78.3 404.5 98.1 400 107.5 385.1L128.4 351.9L128.4 544.1C128.4 561.8 142.7 576.1 160.4 576.1C178.1 576.1 192.4 561.8 192.4 544.1zM480.5 64L448.5 64C439.7 64 432.5 71.2 432.5 80C432.5 88.8 439.7 96 448.5 96L448.5 196.3C438.9 201.8 432.5 212.2 432.5 224L432.5 256C414.8 256 400.5 270.3 400.5 288L400.5 432C400.5 449.7 414.8 464 432.5 464L448.5 464L448.5 560C448.5 568.8 455.7 576 464.5 576L524 576C534.4 576 542 566.2 539.5 556.1L516.5 464L560.5 464C569.3 464 576.5 456.8 576.5 448L576.5 432C576.5 423.2 569.3 416 560.5 416L512.5 416L512.5 389.3L565.6 371.6C572.1 369.4 576.5 363.3 576.5 356.4L576.5 271.9C576.5 263.1 569.3 255.9 560.5 255.9L544.5 255.9C535.7 255.9 528.5 263.1 528.5 271.9L528.5 327.9L512.5 333.2L512.5 223.9C512.5 212.1 506.1 201.7 496.5 196.2L496.5 79.9C496.5 71.1 489.3 63.9 480.5 63.9z"/></svg>
@@ -521,7 +526,275 @@
                 .join(':');
         }
     }
-    class AnalyseRC {
+    class Analyses {
+        static panneau = null;
+        static onglets = null;
+        static contenu = null;
+        static modules = new Map();
+        static actif = null;
+        static dernierContexte = null;
+        static get estForum() { return SourceDonnees.estForum; }
+        static get estMessagerie() { return SourceDonnees.estMessagerie; }
+        static init() {
+            InterfaceGraphique.init();
+            const style = document.createElement('style');
+            style.textContent = `
+                #fz-analyses-onglets {
+                    display: flex;
+                    justify-content: center;
+                    gap: var(--fz-espacement);
+                    padding: 0 var(--fz-padding) var(--fz-padding);
+                    flex-shrink: 0;
+                }
+                #fz-analyses-onglets button {
+                    flex: 1;
+                }
+                #fz-analyses-onglets button.actif {
+                    background: var(--fz-gradient-titre);
+                    box-shadow: var(--fz-ombre-creuse);
+                }
+                #fz-analyses-contenu {
+                    display: flex;
+                    flex-direction: column;
+                    min-height: 0;
+                    overflow: hidden;
+                }
+                #fz-analyses-contenu > section,
+                #fz-analyses-contenu > div {
+                    display: flex;
+                    flex-direction: column;
+                    min-height: 0;
+                    overflow: hidden;
+                }
+            `;
+            document.head.append(style);
+            this.panneau = document.createElement('section');
+            this.panneau.id = 'fz-analyses';
+            this.panneau.className = 'fz-panneau';
+            this.panneau.hidden = true;
+            this.panneau.innerHTML = `
+                <div class="fz-entete">
+                    <strong class="fz-titre">Analyses</strong>
+                    <button type="button"
+                        id="fz-analyses-fermer"
+                        class="fz-bouton fz-fermer">
+                        Fermer
+                    </button>
+                </div>
+                <div id="fz-analyses-onglets"></div>
+                <div id="fz-analyses-contenu"></div>
+            `;
+            document.body.append(this.panneau);
+            this.onglets = this.panneau.querySelector(
+                '#fz-analyses-onglets'
+            );
+            this.contenu = this.panneau.querySelector(
+                '#fz-analyses-contenu'
+            );
+            this.panneau.querySelector(
+                '#fz-analyses-fermer'
+            ).onclick = () => this.fermer();
+            MenuOutils.icones.fz_boutonAnalyses =
+                MenuOutils.icones.fz_boutonBilanTdC;
+            MenuOutils.ajouter(
+                'fz_boutonAnalyses',
+                'Analyses',
+                () => this.ouvrir()
+            );
+        }
+        static enregistrer(id, libelle, ouvrir, reinitialiser = null) {
+            this.modules.set(id, {libelle, ouvrir, reinitialiser});
+            const bouton = document.createElement('button');
+            bouton.type = 'button';
+            bouton.className = 'fz-bouton';
+            bouton.dataset.module = id;
+            bouton.textContent = libelle;
+            bouton.onclick = () => this.selectionner(id);
+            this.onglets.append(bouton);
+        }
+        static ouvrir() {
+            const contexte = SourceDonnees.contexte();
+            if (this.dernierContexte !== contexte) {
+                for (const module of this.modules.values()) module.reinitialiser?.();
+                this.dernierContexte = contexte;
+            }
+            this.panneau.hidden = false;
+            const id = this.actif || (this.estForum && this.modules.has('tdc') ? 'tdc' : 'rc');
+            this.selectionner(id);
+        }
+        static fermer() {
+            this.panneau.hidden = true;
+        }
+        static selectionner(id) {
+            const module = this.modules.get(id);
+            if (!module) return;
+            this.actif = id;
+            for (const element of this.contenu.children) {
+                element.hidden = true;
+            }
+            for (const bouton of this.onglets.children) {
+                const actif = bouton.dataset.module === id;
+                bouton.classList.toggle('actif', actif);
+                bouton.setAttribute('aria-pressed', actif);
+            }
+            module.ouvrir();
+        }
+    }
+    class SourceDonnees {
+        static get estForum() {
+            return location.pathname === '/alliance.php' && new URLSearchParams(location.search).has('forum_menu');
+        }
+        static get estMessagerie() {
+            return location.pathname === '/messagerie.php';
+        }
+        static get pageDisponible() {
+            return this.estForum || this.estMessagerie;
+        }
+        static page() {
+            if (this.estForum) return this.texteForum();
+            if (this.estMessagerie) return this.texteMessages();
+            return '';
+        }
+        static texteMessages() {
+            const rapports = [...document.querySelectorAll('#table_liste_conversations tr[id^="message_"] .contenuJoueur')]
+                .filter((element) => {
+                    const ligne = element.closest('tr[id^="message_"]');
+                    return ligne && element.getClientRects().length > 0
+                        && getComputedStyle(element).visibility !== 'hidden';
+                })
+                .map((element) => {
+                    const copie = element.cloneNode(true);
+                    copie.querySelectorAll('br').forEach((br) => br.replaceWith('\n'));
+                    let ligne = element.closest('tr[id^="message_"]');
+                    let date = null;
+                    for (let i = 0; ligne && i < 3 && !date; i++, ligne = ligne.previousElementSibling) {
+                        const meta = ligne.cloneNode(true);
+                        meta.querySelectorAll('.contenuJoueur').forEach((n) => n.remove());
+                        date = Commun.lireDate(meta.textContent);
+                    }
+                    return (date ? date.texte + '\n' : '') + (copie.textContent || '');
+                })
+                .filter((texte) => /Troupes en attaque\s*:/i.test(texte)
+                    && /Troupes en d[eé]fense\s*:/i.test(texte));
+            return rapports.join('\n\n');
+        }
+        static texteForum() {
+            const root = document.getElementById('forum');
+            if (!root) return '';
+            const out = [];            
+            var BLOCK = /^(DIV|P|LI|UL|OL|TR|TABLE|TBODY|H[1-6]|SECTION|ARTICLE|BLOCKQUOTE|FORM|TD|TH)$/;
+            (function walk(n) {
+                if (n.nodeType === 3) { out.push(n.nodeValue); return; }
+                if (n.nodeType !== 1) return;
+                if (n.id === 'tdc-panel' || n.id === 'fz_boutonBilanTdC') return;
+                var tag = n.tagName;
+                if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+                if (tag === 'BR') { out.push('\n'); return; }
+                if (tag === 'A' && /Membre\.php\?Pseudo=/i.test(n.getAttribute('href') || '')) {
+                    out.push('\n[' + n.textContent.trim() + '](x)');
+                    return;
+                }
+                var block = BLOCK.test(tag);
+                if (block) out.push('\n');
+                for (var c = n.firstChild; c; c = c.nextSibling) walk(c);
+                if (block) out.push('\n');
+            })(root);
+            return out.join('');
+        }       
+        static moisIndex(texte) {
+            const mois = Commun.norm(texte).replace(/\./g, '');
+            if (mois.startsWith('juin')) return 5;
+            if (mois.startsWith('juil')) return 6;
+            return ['jan', 'fev', 'mar', 'avr', 'mai', 'juin', 'juil', 'aou', 'sep', 'oct', 'nov', 'dec'].indexOf(mois.slice(0, 3));
+        }
+        static dateForum(texte, now = new Date()) {
+            const s = Commun.norm(texte);
+            const relatif = s.match(/^(hier|aujourd'hui)\s+a\s+(\d{1,2})h(\d{2})$/);
+            if (relatif) {
+                const date = new Date(now);
+                if (relatif[1] === 'hier') date.setDate(date.getDate() - 1);
+                date.setHours(+relatif[2], +relatif[3], 0, 0);
+                return date;
+            }
+            const m = s.match(/^(\d{1,2})\s+([a-z.]+)(?:\s+(\d{4}))?\s+a\s+(\d{1,2})h(\d{2})$/);
+            if (!m) return null;
+            const mois = this.moisIndex(m[2]);
+            if (mois < 0 || +m[4] > 23 || +m[5] > 59) return null;
+            let annee = m[3] ? +m[3] : now.getFullYear();
+            let date = new Date(annee, mois, +m[1], +m[4], +m[5]);
+            if (!m[3] && date.getTime() > now.getTime() + 86400000) date = new Date(--annee, mois, +m[1], +m[4], +m[5]);
+            if (date.getMonth() !== mois || date.getDate() !== +m[1]) return null;
+            return date;
+        }
+        static blocsAuteur(lignes, auteur, date) {
+            const blocs = [];
+            let bloc = {auteurPost: auteur, auteur, datePost: date, date, lignes: []};
+            for (let i = 0; i < lignes.length; i++) {
+                const ligne = lignes[i].trim().replace(/^Modifier\s*/, '').trim();
+                if (!ligne) continue;
+                const pseudo = ligne.replace(/^\[([^\]]+)\]\([^)]*\)$/, '$1');
+                const dateSuivante = this.dateForum(lignes[i + 1] || '', date || new Date());
+                if (/^[\p{L}\p{N}_.-]+$/u.test(pseudo) && dateSuivante) {
+                    if (bloc.lignes.length) blocs.push(bloc);
+                    bloc = {auteurPost: auteur, auteur: pseudo, datePost: date, date: dateSuivante, lignes: []};
+                    i++;
+                } else {
+                    bloc.lignes.push(ligne);
+                }
+            }
+            if (bloc.lignes.length) blocs.push(bloc);
+            return blocs;
+        }
+        static contexte() {
+            return JSON.stringify([location.href, this.page()]);
+        }        
+        static postsForum(texte, now = new Date()) {
+            const lignes = texte.replace(/\r/g, '').split('\n').map(l => l.replace(/[\u00a0\u202f]/g, ' ').trim()).filter(Boolean);
+            const posts = [];
+            let post = null;
+            for (let i = 0; i < lignes.length; i++) {
+                const m = lignes[i].match(/^\[([^\]]+)\]\([^)]*\)(.*)$/);
+                if (m) {
+                    let reste = m[2].trim(), tag = '';
+                    const tm = reste.match(/^\(([^)]+)\)/);
+                    if (tm) { tag = tm[1].trim(); reste = reste.slice(tm[0].length).trim(); }
+                    let j = i + 1;
+                    if (!tag && !reste && /^\([^)]+\)$/.test(lignes[j] || '')) {
+                        tag = lignes[j].slice(1, -1).trim();
+                        j++;
+                    }
+                    const date = this.dateForum(reste || lignes[j] || '', now);
+                    if (date) {
+                        post = {author: m[1], tag, date, lines: []};
+                        posts.push(post);
+                        i = reste ? i : j;
+                        continue;
+                    }
+                    if (post) {
+                        const texte = (m[1] + m[2]).trim();
+                        if (post.lines.length) post.lines[post.lines.length - 1] += ' ' + texte;
+                        else post.lines.push(texte);
+                    }
+                } else if (post && lignes[i] !== 'Corbeille') {
+                    post.lines.push(lignes[i]);
+                }
+            }
+            return posts;
+        }
+        static contenusForum(texte, now = new Date()) {
+            const posts = this.postsForum(texte, now);
+            return posts.flatMap(p => this.blocsAuteur(p.lines, p.author, p.date).map(b => ({
+                author: b.auteur,
+                authorPost: p.author,
+                date: b.date,
+                datePost: p.date,
+                tag: b.auteur === p.author ? p.tag : '',
+                tagPost: p.tag,
+                lines: b.lignes
+            })));
+        }
+    }
+    class Rc {
         static init() {
             'use strict';
             InterfaceGraphique.init();
@@ -565,6 +838,16 @@
                     }
                 }
                 return blocs;
+            }
+            function decouperForum(texte) {
+                return SourceDonnees.contenusForum(texte).flatMap(p => {
+                    const d = p.date;
+                    const date = d ? {
+                        ms: Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()),
+                        texte: `${d.toLocaleDateString('fr-FR')} ${d.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}`
+                    } : null;
+                    return decouper(p.lines.join('\n')).map(b => ({...b, auteurPost: p.authorPost, auteur: p.author, date: b.date || date}));
+                });
             }
             function analyserBloc(bloc, numero) {
                 const titre = bloc.split(/\n|Troupes en attaque\s*:/i)[0].trim().replace(/\s+/g, ' ');
@@ -726,13 +1009,22 @@
                 </div>`;
             }
             function afficherResultats(blocs) {
-                const destination = document.getElementById('rc-resultats');
                 const rapports = [];
                 const erreurs = [];
                 blocs.forEach((b, i) => {
-                    try { rapports.push({...analyserBloc(b.texte, i + 1), date: b.date}); }
+                    try {
+                        const r = analyserBloc(b.texte, i + 1);
+                        const auteur = b.auteur || 'Vous';
+                        if (r.defense) r.cible = auteur;
+                        else r.attaquant = auteur;
+                        rapports.push({...r, date: b.date, auteurPost: b.auteurPost || '', auteur});
+                    }
                     catch (e) { erreurs.push(`Combat ${i + 1} : ${e.message}`); }
                 });
+                afficherRapports(rapports, erreurs);
+            }
+            function afficherRapports(rapports, erreurs = []) {
+                const destination = document.getElementById('rc-resultats');
                 if (!rapports.length) {
                     destination.innerHTML = `<p class="rc-alerte">Aucun combat exploitable. ${echapper(erreurs.join(' ; ') || 'Ouvrez un message contenant un rapport complet ou collez son texte.')}</p>`;
                     afficherSaisie(true);
@@ -781,6 +1073,9 @@
                             (${echapper(r.lieu)})
                         </summary>                        
                     <div class="rc-interieur">
+                        <div class="fz-actions">
+                            <button type="button" class="fz-bouton rc-modifier-auteur" data-numero="${r.numero}">Auteur : ${echapper(r.auteur)} ✎</button>
+                        </div>
                         ${r.occupation ? '<p>Armée d’occupation présente : le propriétaire de la fourmilière n’est pas nécessairement le défenseur réel.</p>' : ''}
                         <div class="rc-chiffres"><div><small>Attaquants initiaux</small><b>${fmt(nA)}</b><small>Pertes : ${fmt(r.pertesAtt)} (${nA ? (r.pertesAtt * 100 / nA).toFixed(2) : 0} %)</small></div>
                         <div><small>Défenseurs initiaux</small><b>${fmt(nD)}</b><small>Pertes : ${fmt(r.pertesDef)} (${nD ? (r.pertesDef * 100 / nD).toFixed(2) : 0} %)</small></div></div>
@@ -820,35 +1115,22 @@
                     `);
                 }
                 destination.innerHTML = html.join('');
+                destination.querySelectorAll('.rc-modifier-auteur').forEach(bouton => {
+                    bouton.onclick = () => {
+                        const r = rapports.find(r => r.numero === Number(bouton.dataset.numero));
+                        if (!r) return;
+                        const pseudo = prompt('Auteur du rapport de combat :', r.auteur);
+                        if (pseudo === null || !pseudo.trim() || pseudo.trim() === r.auteur) return;
+                        r.auteur = pseudo.trim();
+                        if (r.defense) r.cible = r.auteur;
+                        else r.attaquant = r.auteur;
+                        afficherRapports(rapports, erreurs);
+                    };
+                });
                 destination.querySelectorAll('.rc-tdp').forEach((element) => {
                     element.classList.add('fz-detail');
                 });
                 afficherSaisie(false);                
-            }
-            function texteMessages() {
-                // Les lignes de conversation sont des FRÈRES des lignes message_,
-                // et non leurs ancêtres : closest('tr.contenu_conversation') échoue.
-                const rapports = [...document.querySelectorAll('#table_liste_conversations tr[id^="message_"] .contenuJoueur')]
-                    .filter((element) => {
-                        const ligne = element.closest('tr[id^="message_"]');
-                        return ligne && element.getClientRects().length > 0
-                            && getComputedStyle(element).visibility !== 'hidden';
-                    })
-                    .map((element) => {
-                        const copie = element.cloneNode(true);
-                        copie.querySelectorAll('br').forEach((br) => br.replaceWith('\n'));
-                        let ligne = element.closest('tr[id^="message_"]');
-                        let date = null;
-                        for (let i = 0; ligne && i < 3 && !date; i++, ligne = ligne.previousElementSibling) {
-                            const meta = ligne.cloneNode(true);
-                            meta.querySelectorAll('.contenuJoueur').forEach((n) => n.remove());
-                            date = Commun.lireDate(meta.textContent);
-                        }
-                        return (date ? date.texte + '\n' : '') + (copie.textContent || '');
-                    })
-                    .filter((texte) => /Troupes en attaque\s*:/i.test(texte)
-                        && /Troupes en d[eé]fense\s*:/i.test(texte));
-                return rapports.join('\n\n');
             }
             function afficherSaisie(visible, vider = false) {
                 const saisie = document.getElementById('rc-saisie');
@@ -886,34 +1168,17 @@
                 @media (max-width: 650px) { #rc-panneau .rc-chiffres { grid-template-columns: 1fr; } }
             `;
             document.head.append(style);            
-            MenuOutils.ajouter('fz_boutonAnalyseRC', 'Analyse RC', ouvrir);
+            Analyses.enregistrer('rc', 'Analyse RC', ouvrir, () => afficherSaisie(true, true));
             const panneau = document.createElement('section');
             panneau.id = 'rc-panneau';
-            panneau.className = 'fz-panneau';
             panneau.hidden = true;
             panneau.innerHTML = `
-                <div id="rc-entete" class="fz-entete">
-                    <strong class="fz-titre">
-                        Analyse RC
-                    </strong>
-                    <button type="button"
-                        id="rc-fermer"
-                        class="fz-bouton fz-fermer">
-                        Fermer
-                    </button>
-                </div>
                 <div id="rc-corps" class="fz-corps">
                     <div id="rc-saisie">
                         <div id="rc-actions" class="fz-actions">
-                            <button class="fz-bouton"
-                                id="rc-messagerie">
-                                Analyser les messages affichés
-                            </button>
-                            <button class="fz-bouton"
-                                id="rc-coller">
-                                Analyser le texte collé
-                            </button>
-                        </div>
+                            <button class="fz-bouton" id="rc-page">Analyser la page</button>
+                            <button class="fz-bouton" id="rc-coller">Analyser le texte collé</button>
+                        </div>                        
                         <textarea
                             id="rc-texte"
                             class="fz-saisie"
@@ -943,7 +1208,7 @@
                     </div>
                 </div>
             `;
-            document.body.append(panneau);
+            Analyses.contenu.append(panneau);
             document.getElementById('rc-modifier').onclick = () => {
                 afficherSaisie(true);
             };
@@ -951,133 +1216,62 @@
                 afficherSaisie(true, true);
             };
             document.getElementById('rc-texte').value = '';            
-            document.getElementById('rc-messagerie').style.display = estMessagerie ? '' : 'none';
-            document.getElementById('rc-fermer').onclick = () => { panneau.hidden = true; };
+            document.getElementById('rc-page').hidden = !SourceDonnees.pageDisponible;
             document.getElementById('rc-coller').onclick = () => afficherResultats(decouper(document.getElementById('rc-texte').value));
-            document.getElementById('rc-messagerie').onclick = () => {
-                if (!estMessagerie) return;
-                const texte = texteMessages();
-                if (texte) {
-                    document.getElementById('rc-texte').value = texte;
-                    afficherResultats(decouper(texte));
-                } else {
-                    document.getElementById('rc-resultats').innerHTML = '<p class="rc-alerte">Aucun rapport visible trouvé. Ouvrez le message dans la messagerie, puis réessayez.</p>';
-                }
-            };
+            document.getElementById('rc-page').onclick = () => {
+                const texte = SourceDonnees.page();
+                document.getElementById('rc-texte').value = texte;
+                afficherResultats(SourceDonnees.estForum ? decouperForum(texte) : decouper(texte));
+            };                
         }
     }
     class BilanTdC {
         static init() {
             'use strict';
-            const pageForum = window.location.href.startsWith(
-                'https://s1.fourmizzz.fr/alliance.php?forum_menu'
-            );
-            MenuOutils.ajouter(
-                'fz_boutonBilanTdC',
-                'Bilan TdC',
-                pageForum ? null : () => {
-                    window.location.href = 'alliance.php?forum_menu';
-                }
-            );
-            if (!pageForum) return;
-            if (!pageForum) return;
+            if (!SourceDonnees.estForum) return;
             if (!Commun.pseudo) return;   // pas connecté
             InterfaceGraphique.init();
             const parseNum = Commun.nombre;            
-            function monthIdx(t) {
-                t = t.toLowerCase().replace('.', '');
-                if (t.indexOf('juin') === 0) return 5;
-                if (t.indexOf('juil') === 0) return 6;
-                var m = { jan: 0, 'fév': 1, fev: 1, mar: 2, avr: 3, mai: 4, 'aoû': 7, aou: 7, sep: 8, oct: 9, nov: 10, 'déc': 11, dec: 11 };
-                var v = m[t.slice(0, 3)];
-                return v === undefined ? -1 : v;
-            }
             function parsePosts(text, now) {
-                var raw = text.replace(/\r/g, '').split('\n').map(function (x) { return x.replace(/[\u00a0\u202f]/g, ' ').trim(); }).filter(Boolean);
-                var posts = [], cur = null;
-                var hdr = /^\[([^\]]+)\]\([^)]*\)(.*)$/;
-                var dre = /^(\d{1,2})\s+([A-Za-zÀ-ÿ.]+)(?:\s+(\d{4}))?\s+à\s+(\d{1,2})h(\d{2})$/;
-                function isDate(l) {
-                if (/^(hier|aujourd['’]hui)\s+à\s+\d{1,2}h\d{2}$/i.test(l)) return true;
-                var d = l.match(dre);
-                return !!d && monthIdx(d[2]) >= 0;
-                }
-                /* 1. Un pseudo cliquable n'est l'auteur d'un post que s'il est suivi de la date du post.
-                    Sinon c'est un nom au milieu d'une phrase (ex. « Vol par [pseudo] : ... ») : on le remet dans la ligne. */
-                var items = [];
-                for (var i = 0; i < raw.length; i++) {
-                var m = raw[i].match(hdr);
-                if (!m) { items.push({ s: raw[i] }); continue; }
-                var rest = m[2].trim(), tag = '', tm = rest.match(/\(([^)]+)\)/);
-                if (tm) { tag = tm[1].trim(); rest = rest.replace(tm[0], '').trim(); }
-                var j = i + 1, tagNext = false;
-                if (!tag && !rest && j < raw.length && /^\([^)]+\)$/.test(raw[j])) { tag = raw[j].slice(1, -1).trim(); tagNext = true; j++; }
-                var real = rest ? isDate(rest) : (j < raw.length && isDate(raw[j]));
-                if (real) {
-                    items.push({ h: { author: m[1], tag: tag } });
-                    if (rest) items.push({ s: rest });
-                    if (tagNext) i++;
-                } else {
-                    var txt = (m[1] + m[2]).trim(), last = items[items.length - 1];
-                    if (last && last.s !== undefined) last.s += ' ' + txt; else items.push({ s: txt });
-                }
-                }
-                function handle(l) {
-                if (!cur || !l || l === 'Corbeille') return;
-                var d = l.match(dre);
-                if (d && !cur.date) {
-                    var mi = monthIdx(d[2]);
-                    if (mi >= 0) {
-                    var y = d[3] ? +d[3] : now.getFullYear();
-                    var dt = new Date(y, mi, +d[1], +d[4], +d[5]);
-                    if (!d[3] && dt.getTime() > now.getTime() + 86400000) dt = new Date(y - 1, mi, +d[1], +d[4], +d[5]);
-                    cur.date = dt; return;
-                    }
-                }
-                cur.lines.push(l);
-                }
-                items.forEach(function (it) {
-                if (it.h) { cur = { author: it.h.author, tag: it.h.tag, date: null, lines: [], entries: [], notes: [] }; posts.push(cur); return; }
-                handle(it.s);
-                });
+                const posts = SourceDonnees.contenusForum(text, now).map(p => ({...p, entries: [], notes: []}));            
                 posts.forEach(function (p) {
-                var sumB = [], sumV = [], rawB = [], rawV = [];
-                p.lines.forEach(function (l) {
-                    var m;
-                    if ((m = l.match(/Butin chez\s+([^\s:]+)\s*:\s*([\d ]+)\s*cm/i))) sumB.push({ type: 'butin', target: m[1], amount: parseNum(m[2]) });
-                    else if ((m = l.match(/Vol par\s+([^\s:]+)\s*:\s*([\d ]+)\s*cm/i))) sumV.push({ type: 'vol', target: m[1], amount: parseNum(m[2]) });
-                    else if ((m = l.match(/fourmis\s+ont\s+conquis\s+([\d\s\u00a0\u202f]+)\s*cm(?:²|2)?(?:.*?Ces terres appartenaient à\s+([^\s.]+))?/i))) { rawB.push({ type: 'butin', target: m[2] || '', amount: parseNum(m[1]) }); }  
-                    else if ((m = l.match(/(\S+)\s+vous a pris\s+([\d ]+)\s*cm/i))) rawV.push({ type: 'vol', target: m[1], amount: parseNum(m[2]) });
-                });
-                function pick(sum, raw, label) {
-                    if (sum.length) {
-                    if (raw.length) {
-                        var a = sum.reduce(function (s, e) { return s + e.amount; }, 0);
-                        var b = raw.reduce(function (s, e) { return s + e.amount; }, 0);
-                        if (a === b) p.notes.push({ warn: false, text: 'Détail ignoré : ' + raw.length + ' ligne(s), même total.' });
-                        else p.notes.push({ warn: true, text: 'Le détail (' + b.toLocaleString('fr-FR') + ') diffère du total (' + a.toLocaleString('fr-FR') + ') pour le ' + label + '. Le total est retenu.' });
+                    var sumB = [], sumV = [], rawB = [], rawV = [];
+                    p.lines.forEach(function (l) {
+                        var m;
+                        if ((m = l.match(/Butin chez\s+([^\s:]+)\s*:\s*([\d ]+)\s*cm/i))) sumB.push({ type: 'butin', target: m[1], amount: parseNum(m[2]) });
+                        else if ((m = l.match(/Vol par\s+([^\s:]+)\s*:\s*([\d ]+)\s*cm/i))) sumV.push({ type: 'vol', target: m[1], amount: parseNum(m[2]) });
+                        else if ((m = l.match(/fourmis\s+ont\s+conquis\s+([\d\s\u00a0\u202f]+)\s*cm(?:²|2)?(?:.*?Ces terres appartenaient à\s+([^\s.]+))?/i))) { rawB.push({ type: 'butin', target: m[2] || '', amount: parseNum(m[1]) }); }  
+                        else if ((m = l.match(/(\S+)\s+vous a pris\s+([\d ]+)\s*cm/i))) rawV.push({ type: 'vol', target: m[1], amount: parseNum(m[2]) });
+                    });
+                    function pick(sum, raw, label) {
+                        if (sum.length) {
+                        if (raw.length) {
+                            var a = sum.reduce(function (s, e) { return s + e.amount; }, 0);
+                            var b = raw.reduce(function (s, e) { return s + e.amount; }, 0);
+                            if (a === b) p.notes.push({ warn: false, text: 'Détail ignoré : ' + raw.length + ' ligne(s), même total.' });
+                            else p.notes.push({ warn: true, text: 'Le détail (' + b.toLocaleString('fr-FR') + ') diffère du total (' + a.toLocaleString('fr-FR') + ') pour le ' + label + '. Le total est retenu.' });
+                        }
+                        return sum;
+                        }
+                        return raw;
                     }
-                    return sum;
+                    p.entries = pick(sumB, rawB, 'butin').concat(pick(sumV, rawV, 'vol'));
+                    /* 2. Message privé collé dans un post (« Moi », « Participants… ») : il répète des floods déjà postés ailleurs, on l'ignore */
+                    if (p.entries.length && p.lines.some(function (l) { return /^Moi(\s|,|$)/.test(l) || /Participants \(messages/i.test(l); })) {
+                        p.entries = [];
+                        p.notes.push({ warn: false, text: 'Message privé collé dans le post : ignoré (les floods sont déjà dans leurs posts d\u2019origine).' });
                     }
-                    return raw;
-                }
-                p.entries = pick(sumB, rawB, 'butin').concat(pick(sumV, rawV, 'vol'));
-                /* 2. Message privé collé dans un post (« Moi », « Participants… ») : il répète des floods déjà postés ailleurs, on l'ignore */
-                if (p.entries.length && p.lines.some(function (l) { return /^Moi(\s|,|$)/.test(l) || /Participants \(messages/i.test(l); })) {
-                    p.entries = [];
-                    p.notes.push({ warn: false, text: 'Message privé collé dans le post : ignoré (les floods sont déjà dans leurs posts d\u2019origine).' });
-                }
                 });
                 return posts.filter(function (p) { return p.entries.length || p.lines.length; });
             }
             // Construit exclusivement à partir des auteurs de la lecture courante.
             function construireAuteurs(posts) {
                 const membres = new Map();
-                const partage = posts.some((p) => p.tag);
+                const partage = posts.some((p) => p.tagPost);
                 for (const p of posts) {
-                    const cle = Commun.norm(p.author);
+                    const cle = Commun.norm(p.authorPost || p.author);
                     if (!cle) continue;
-                    const tag = partage ? p.tag : Commun.alliance;
+                    const tag = partage ? p.tagPost : Commun.alliance;
                     if (!tag) continue;
                     const precedent = membres.get(cle);
                     if (precedent && precedent !== tag) membres.set(cle, null);
@@ -1148,171 +1342,41 @@
             function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
             /* ---------- Styles spécifiques au Bilan TdC ---------- */
             var css = `
-                #tdc-panel .tdc-body {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 8px;
-                }
-                #tdc-panel h3 {
-                    margin: 0 0 6px;
-                    font-size: var(--fz-taille-14);
-                    color: var(--fz-texte);
-                }
-                #tdc-panel .tdc-topic {
-                    text-align: center;
-                    font-weight: 700;
-                    font-size: var(--fz-taille-14);
-                    overflow-wrap: anywhere;
-                    margin-bottom: 4px;
-                }
-                #tdc-panel .tdc-tiles {
-                    grid-template-columns: repeat(3, minmax(0, 1fr));
-                    margin-bottom: 0;
-                }
-                #tdc-panel .tdc-tile {
-                    min-width: 0;
-                    gap: 5px;
-                }
-                #tdc-panel .tdc-k {
-                    font-size: var(--fz-taille-13);
-                    font-weight: 600;
-                }
-                #tdc-panel .tdc-n {
-                    font-size: var(--fz-taille-18);
-                    font-weight: 700;
-                    font-variant-numeric: tabular-nums;
-                    overflow-wrap: anywhere;
-                    max-width: 100%;
-                }
-                #tdc-panel .tdc-u {
-                    font-size: var(--fz-taille-12);
-                }
-                #tdc-panel .tdc-internes {
-                    text-align: center;
-                    font-size: var(--fz-taille-12);
-                    color: var(--fz-texte-secondaire);
-                }
-                #tdc-panel .tdc-scroll {
-                    overflow-x: auto;
-                }
-                #tdc-panel table {
-                    font-variant-numeric: tabular-nums;
-                }
+                #tdc-panel .tdc-body { display: flex; flex-direction: column; gap: 8px; }
+                #tdc-panel h3 { margin: 0 0 6px; font-size: var(--fz-taille-14); color: var(--fz-texte); }
+                #tdc-panel .tdc-topic { text-align: center; font-weight: 700; font-size: var(--fz-taille-14); overflow-wrap: anywhere; margin-bottom: 4px; }
+                #tdc-panel .tdc-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 0; }
+                #tdc-panel .tdc-tile { min-width: 0; gap: 5px; }
+                #tdc-panel .tdc-k { font-size: var(--fz-taille-13); font-weight: 600; }
+                #tdc-panel .tdc-n { font-size: var(--fz-taille-18); font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; max-width: 100%; }
+                #tdc-panel .tdc-u { font-size: var(--fz-taille-12); }
+                #tdc-panel .tdc-internes { text-align: center; font-size: var(--fz-taille-12); color: var(--fz-texte-secondaire); }
+                #tdc-panel .tdc-scroll { overflow-x: auto; }
+                #tdc-panel table { font-variant-numeric: tabular-nums; }
                 #tdc-panel th,
-                #tdc-panel td {
-                    background: none;
-                    color: inherit;
-                }
-                #tdc-panel th {
-                    color: var(--fz-texte-secondaire);
-                }
-                #tdc-panel .b {
-                    color: #305e20;
-                }
-                #tdc-panel .v {
-                    color: var(--fz-alerte);
-                }
-                #tdc-panel tfoot td {
-                    font-weight: 700;
-                    border-top: 2px solid var(--fz-bordure);
-                }
-                #tdc-panel .tdc-post {
-                    display: flex;
-                    gap: var(--fz-espacement);
-                    align-items: flex-start;
-                    padding: 8px;
-                    border-bottom: 1px solid var(--fz-bordure);
-                }
-                #tdc-panel .tdc-post.off {
-                    opacity: .5;
-                }
+                #tdc-panel td { background: none; color: inherit; }
+                #tdc-panel th { color: var(--fz-texte-secondaire); }
+                #tdc-panel .b { color: #305e20; }
+                #tdc-panel .v { color: var(--fz-alerte); }
+                #tdc-panel tfoot td { font-weight: 700; border-top: 2px solid var(--fz-bordure); }
+                #tdc-panel .tdc-post { display: flex; gap: var(--fz-espacement); align-items: flex-start; padding: 8px; border-bottom: 1px solid var(--fz-bordure); }
+                #tdc-panel .tdc-post.off { opacity: .5; }
                 #tdc-panel .tdc-note,
-                #tdc-panel .tdc-muted {
-                    font-size: var(--fz-taille-12);
-                    color: var(--fz-texte-secondaire);
-                }
-                #tdc-panel .tdc-note.warn {
-                    color: var(--fz-alerte);
-                }
-                #tdc-panel .tdc-phrase {
-                    font-weight: 700;
-                    font-size: var(--fz-taille-14);
-                    text-align: center;
-                    padding: var(--fz-padding);
-                    background: var(--fz-gradient-carte);
-                    border-radius: var(--fz-rayon-carte);
-                    box-shadow: var(--fz-ombre-relief);
-                }
-                #tdc-panel .tdc-sub {
-                    font-size: var(--fz-taille-11);
-                    color: var(--fz-texte-secondaire);
-                    font-weight: 400;
-                }
-                #tdc-panel .tdc-interieur {
-                    padding: var(--fz-padding);
-                    background: var(--fz-fond);
-                    overflow-x: auto;
-                }
-                #tdc-panel .fz-detail {
-                    margin: 0;
-                    flex-shrink: 0;
-                }
-                #tdc-panel select {
-                    font: inherit;
-                    font-size: var(--fz-taille-13);
-                    margin-left: 5px;
-                    padding: 5px 8px;
-                    background: var(--fz-saisie);
-                    color: var(--fz-texte);
-                    border: 1px solid var(--fz-bordure);
-                    border-radius: var(--fz-rayon-bouton);
-                    box-shadow: var(--fz-ombre-creuse);
-                }
-                #tdc-panel input[type="checkbox"] {
-                    accent-color: var(--fz-succes);
-                }
-                #tdc-panel .tdc-actions {
-                    padding: 10px;
-                    margin: 0;
-                    flex-shrink: 0;
-                }
-                @media (max-width: 650px) {
-                    #tdc-panel .tdc-n {
-                        font-size: var(--fz-taille-13);
-                    }
-                    #tdc-panel .tdc-k,
-                    #tdc-panel .tdc-u {
-                        font-size: var(--fz-taille-11);
-                    }
-                }
+                #tdc-panel .tdc-muted { font-size: var(--fz-taille-12); color: var(--fz-texte-secondaire); }
+                #tdc-panel .tdc-note.warn { color: var(--fz-alerte); }
+                #tdc-panel .tdc-phrase { font-weight: 700; font-size: var(--fz-taille-14); text-align: center; padding: var(--fz-padding); background: var(--fz-gradient-carte); border-radius: var(--fz-rayon-carte); box-shadow: var(--fz-ombre-relief); }
+                #tdc-panel .tdc-sub { font-size: var(--fz-taille-11); color: var(--fz-texte-secondaire); font-weight: 400; }
+                #tdc-panel .tdc-interieur { padding: var(--fz-padding); background: var(--fz-fond); overflow-x: auto; }
+                #tdc-panel .fz-detail { margin: 0; flex-shrink: 0; }
+                #tdc-panel select { font: inherit; font-size: var(--fz-taille-13); margin-left: 5px; padding: 5px 8px; background: var(--fz-saisie); color: var(--fz-texte); border: 1px solid var(--fz-bordure); border-radius: var(--fz-rayon-bouton); box-shadow: var(--fz-ombre-creuse); }
+                #tdc-panel input[type="checkbox"] { accent-color: var(--fz-succes); }
+                #tdc-panel .tdc-actions { padding: 10px; margin: 0; flex-shrink: 0; }
+                @media (max-width: 650px) { #tdc-panel .tdc-n { font-size: var(--fz-taille-13); } #tdc-panel .tdc-k, #tdc-panel .tdc-u { font-size: var(--fz-taille-11); } }
             `;
             var st = document.createElement('style');
             st.textContent = css;
             document.head.appendChild(st);            
             /* ---------- Lecture des posts affichés sur la page ---------- */
-            function pageText() {
-                const root = document.getElementById('forum');
-                if (!root) return '';
-                const out = [];            
-                var BLOCK = /^(DIV|P|LI|UL|OL|TR|TABLE|TBODY|H[1-6]|SECTION|ARTICLE|BLOCKQUOTE|FORM|TD|TH)$/;
-                (function walk(n) {
-                    if (n.nodeType === 3) { out.push(n.nodeValue); return; }
-                    if (n.nodeType !== 1) return;
-                    if (n.id === 'tdc-panel' || n.id === 'fz_boutonBilanTdC') return;
-                    var tag = n.tagName;
-                    if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-                    if (tag === 'BR') { out.push('\n'); return; }
-                    if (tag === 'A' && /Membre\.php\?Pseudo=/i.test(n.getAttribute('href') || '')) {
-                        out.push('\n[' + n.textContent.trim() + '](x)');
-                        return;
-                    }
-                    var block = BLOCK.test(tag);
-                    if (block) out.push('\n');
-                    for (var c = n.firstChild; c; c = c.nextSibling) walk(c);
-                    if (block) out.push('\n');
-                })(root);
-                return out.join('');
-            }
             /* ---------- Panneau ---------- */
             const MOI = Commun.pseudo;
             var nous = '', groups = [], openState = {};
@@ -1432,14 +1496,14 @@
                     det('cibles', 'Par joueur cité dans le post', '<p class="tdc-note">Le joueur nommé après « Butin chez » ou « Vol par » (ex. mydolle).</p>' + table(last.targets, 'Joueur cité', function (r) { return esc(r.name); })) +
                     det('posts', 'Posts lus (' + t.used + ', ' + t.ignored + ' ignoré' + (t.ignored > 1 ? 's' : '') + ')', '<p class="tdc-note">Décochez un post pour l’exclure du bilan.</p>' + list);
             }
-            function refresh() {
+            function refresh(texte) {
                 excluded = new Set();
-                posts = parsePosts(pageText(), new Date());
+                posts = parsePosts(texte, new Date());
                 corrections = new Map();
-                forumPartage = posts.some((p) => !!p.tag);
+                forumPartage = posts.some((p) => !!p.tagPost);
                 auteurs = construireAuteurs(posts);
                 var s = {};
-                posts.forEach(function (p) { if (p.entries.length) s[p.tag] = true; });
+                posts.forEach(function (p) { if (p.entries.length) s[p.tagPost] = true; });
                 groups = Object.keys(s);
                 var st = lireNous();
                 nous = Commun.alliance || ((st !== null && st.startsWith('t:')) ? st.slice(2) : '');
@@ -1472,39 +1536,17 @@
                 if (!p) {
                     p = document.createElement('div');
                     p.id = 'tdc-panel';
-                    p.className = 'fz-panneau';
                     p.innerHTML = `
-                        <div class="fz-entete">
-                            <strong class="fz-titre">
-                                Bilan TdC
-                            </strong>
-                            <button type="button"
-                                id="tdc-close"
-                                class="fz-bouton fz-fermer">
-                                Fermer
-                            </button>
-                        </div>
-                        <div id="tdc-body"
-                            class="fz-corps tdc-body">
-                        </div>
+                        <div id="tdc-body" class="fz-corps tdc-body"></div>
                         <div class="fz-actions tdc-actions">
-                            <button type="button"
-                                id="tdc-refresh"
-                                class="fz-bouton">
-                                Actualiser
-                            </button>
-                            <button type="button"
-                                id="tdc-copy"
-                                class="fz-bouton">
-                                Copier Bilan
-                            </button>
+                            <button class="fz-bouton" id="tdc-refresh">Actualiser</button>
+                            <button class="fz-bouton" id="tdc-copy">Copier Bilan</button>
                         </div>
                     `;
-                    document.body.appendChild(p);                
-                document.getElementById('tdc-refresh').addEventListener('click', refresh);
-                document.getElementById('tdc-copy').addEventListener('click', copyTable);
-                document.getElementById('tdc-close').addEventListener('click', function () { p.style.display = 'none'; });
-                document.getElementById('tdc-body').addEventListener('change', function (e) {
+                    Analyses.contenu.appendChild(p);
+                    document.getElementById('tdc-refresh').onclick = () => refresh(SourceDonnees.texteForum());
+                    document.getElementById('tdc-copy').onclick = copyTable;                
+                    document.getElementById('tdc-body').addEventListener('change', function (e) {
                     if (e.target.id === 'tdc-nous') { nous = e.target.value; ecrireNous('t:' + nous); draw(); return; }
                     if (e.target.matches('.tdc-affiliation')) {
                         const cle = Commun.norm(e.target.dataset.pseudo);
@@ -1520,10 +1562,17 @@
                     draw();
                 });
                 }
-                p.style.display = 'flex';
-                refresh();
+                p.hidden = false;
+                if (!last) refresh(SourceDonnees.texteForum());                
             }
-            MenuOutils.ajouter('fz_boutonBilanTdC', 'Bilan TdC', openPanel);
+            Analyses.enregistrer('tdc', 'Bilan TdC', openPanel, () => {
+                last = null;
+                posts = [];
+                excluded = new Set();
+                corrections = new Map();
+                const corps = document.getElementById('tdc-body');
+                if (corps) corps.innerHTML = '';
+            });
         }
     }
     class DonneesJoueur {
@@ -2727,10 +2776,11 @@
             }
         }        
     }
-    Commun.initialiser()
+    Commun.initialiser();
     DonneesJoueur.reprendrePageOuverte();
     MembrePage.init();
-    AnalyseRC.init();
+    Analyses.init();
+    Rc.init();
     BilanTdC.init();
     Chasseurs.init();
     ConvoiMax.init();
