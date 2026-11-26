@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fourmizzz - Outils unifiés test2
 // @namespace    fourmizzz-outils-reunis
-// @version      1.1.8
+// @version      1.1.9
 // @updateURL    https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils-test.user.js
 // @downloadURL  https://raw.githubusercontent.com/laiglenoir/US/main/Fzzz-Outils-test.user.js
 // @description  Analyse RC avec bilan TDP automatique, Bilan TdC, Chasseurs, ConvoiMax, Horloge.
@@ -312,7 +312,7 @@
             const secondes = s => Commun.duree(s);
             function nettoyer(texte) { return Commun.nettoyer(texte); }
             function decouper(texte) { const s = nettoyer(texte); const re = /(?:Vous attaquez\s+(?:la|le|l['’])\s+|[\w.-]+\s+attaque\s+(?:votre|une de vos colonies))/gi; const departs = [...s.matchAll(re)].map((m) => m.index); const blocs = []; for (let i = 0; i < departs.length; i++) { const debut = departs[i]; const fin = departs[i + 1] ?? s.length; const bloc = s.slice(debut, fin); if (/Troupes en attaque\s*:/i.test(bloc) && /Troupes en d[eé]fense\s*:/i.test(bloc)) { const contexte = s.slice(Math.max(i ? departs[i - 1] : 0, debut - 180), debut); blocs.push({texte: bloc, date: Commun.lireDate(contexte)}); } } return blocs; }
-            function decouperForum(texte) { return SourceDonnees.contenusForum(texte).flatMap(p => { const d = p.date; const date = d ? { ms: Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()), texte: `${d.toLocaleDateString('fr-FR')} ${d.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}` } : null; return decouper(p.lines.join('\n')).map(b => ({...b, auteurPost: p.authorPost, auteur: p.author, dateAuteur: date, date: b.date || date})); }); }
+            function decouperForum(texte) { return SourceDonnees.contenusForum(texte).flatMap(p => { const d = p.date; const date = d ? { ms: Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()), texte: `${d.toLocaleDateString('fr-FR', {day: 'numeric', month: 'short', year: 'numeric'})} à ${d.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}).replace(':', 'h')}` } : null; return decouper(p.lines.join('\n')).map(b => ({...b, auteurPost: p.authorPost, auteur: p.author, dateAuteur: date, date: b.date || date})); }); }
             function analyserBloc(bloc, numero) {
                 const titre = bloc.split(/\n|Troupes en attaque\s*:/i)[0].trim().replace(/\s+/g, ' ');
                 const defense = /^([\w.-]+)\s+attaque\s+(?:votre|une de vos colonies)/i.test(titre);
@@ -377,7 +377,7 @@
                 const incertain = (valeur, niveau) => niveau === null ? `${fmt(valeur)} <small>(sans bonus non déterminé)</small>` : fmt(valeur);
                 return `<div class="rc-armee-restante"> <div><b>Troupes :</b> ${elements.length ? elements.join(', ') : 'Aucune troupe survivante'}.</div> <div><b>Armes :</b> ${Number.isFinite(armes) ? fmt(armes) : 'Non déterminable'}</div> ${Number.isFinite(bouclier) ? `<div><b>Bouclier :</b> ${fmt(bouclier)}</div>` : ''} ${nomLieu && niveauLieu !== null ? `<div><b>${nomLieu} :</b> ${fmt(niveauLieu)}</div>` : ''} <div><b>Attaque :</b> ${incertain(attaque, Number.isFinite(armes) ? armes : null)}</div> <div><b>Vie :</b> ${fmt(vie)}</div> ${nomLieu && niveauLieu !== null ? `<div><b>Vie en ${nomLieu} :</b> ${fmt(vieLieu)}</div>` : ''} <div><b>Défense :</b> ${incertain(defense, Number.isFinite(armes) ? armes : null)}</div> </div>`;
             }
-            function afficherResultats(blocs) { const rapports = []; const erreurs = []; blocs.forEach((b, i) => { try { const r = analyserBloc(b.texte, i + 1); const auteur = b.auteur || 'Vous'; if (r.defense) r.cible = auteur; else r.attaquant = auteur; rapports.push({...r, date: b.date, auteurPost: b.auteurPost || '', auteur}); } catch (e) { erreurs.push(`${b.auteur || 'Auteur inconnu'} — ${b.dateAuteur?.texte || b.date?.texte || 'Date inconnue'} : ${e.message}`); } }); afficherRapports(rapports, erreurs); }
+            function afficherResultats(blocs) { const rapports = []; const erreurs = []; blocs.forEach((b, i) => { try { const r = analyserBloc(b.texte, i + 1); const auteur = b.auteur || 'Vous'; if (r.defense) r.cible = auteur; else r.attaquant = auteur; rapports.push({...r, date: b.date, dateAuteur: b.dateAuteur, auteurPost: b.auteurPost || '', auteur}); } catch (e) { erreurs.push(`${b.auteur || 'Auteur inconnu'} — ${b.dateAuteur?.texte || b.date?.texte || 'Date inconnue'} : ${e.message}`); } }); afficherRapports(rapports, erreurs); }
             function afficherRapports(rapports, erreurs = []) {
                 const destination = document.getElementById('rc-resultats');
                 if (!rapports.length) { destination.innerHTML = `<p class="rc-alerte">Aucun combat exploitable. ${echapper(erreurs.join(' ; ') || 'Ouvrez un message contenant un rapport complet ou collez son texte.')}</p>`; afficherSaisie(true); return; }
@@ -390,7 +390,9 @@
                     const hofA = Commun.tempsPonte(r.a) - Commun.tempsPonte(r.finAtt);
                     const hofD = Commun.tempsPonte(r.d) - Commun.tempsPonte(r.finDef);
                     const couleur = /gagnée/i.test(r.issue) ? 'fz-succes' : /perdue/i.test(r.issue) ? 'fz-echec' : 'fz-neutre';
-                    html.push(`<details class="rc-combat fz-detail ${couleur}"> <summary> <strong>${echapper(r.issue)}</strong> : ${echapper(r.attaquant)} → ${echapper(r.cible)} (${echapper(r.lieu)}) </summary> <div class="rc-interieur"> <div class="fz-actions"> <button type="button" class="fz-bouton rc-modifier-auteur" data-numero="${r.numero}">Auteur : ${echapper(r.auteur)} ✎</button> </div> ${r.occupation ? '<p>Armée d’occupation présente : le propriétaire de la fourmilière n’est pas nécessairement le défenseur réel.</p>' : ''} <div class="rc-chiffres"><div><small>Attaquants initiaux</small><b>${fmt(nA)}</b><small>Pertes : ${fmt(r.pertesAtt)} (${nA ? (r.pertesAtt * 100 / nA).toFixed(2) : 0} %)</small></div> <div><small>Défenseurs initiaux</small><b>${fmt(nD)}</b><small>Pertes : ${fmt(r.pertesDef)} (${nD ? (r.pertesDef * 100 / nD).toFixed(2) : 0} %)</small></div></div> <p>Survivants : attaquant <b>${fmt(somme(r.finAtt))}</b> · défenseur <b>${fmt(somme(r.finDef))}</b></p> <div class="rc-niveaux"> <section class="rc-niveau-camp rc-camp-att"> <h4>Niveaux de l’attaquant — ${echapper(r.attaquant)}</h4> <p>Armes : <b>${r.armes.att ?? 'Non déterminable'}</b></p> <p>${afficherDefense(defenses.att)}</p> </section> <section class="rc-niveau-camp rc-camp-def"> <h4>Niveaux du défenseur — ${echapper(r.cible)}</h4> <p>Armes : <b>${r.armes.def ?? 'Non déterminable'}</b></p> <p>${afficherDefense(defenses.def)}</p> <p>Lieu : <b>${echapper(r.lieu)}</b></p> </section> </div> <p>HoF (TDP 0) : attaquant <b>${secondes(hofA)}</b> · défenseur <b>${secondes(hofD)}</b></p> ${r.exces ? `<p class="rc-alerte">Attention : ${fmt(r.exces)} pertes dépassent les effectifs initiaux.</p>` : ''} ${bilanUnites(r)} ${r.xp.length ? `<p><b>XP :</b> ${r.xp.map((x) => `${fmt(x.quantite)} ${echapper(NOMS[x.source])} → ${echapper(NOMS[x.dest])}${x.applique !== x.quantite ? ' (quantité à vérifier)' : ''}`).join(' ; ')}</p>` : ''} ${afficherArmeeRestante(r, defenses)} <details><summary>Détail des tours (${Math.ceil(r.tours.length / 2)})</summary><table><thead><tr><th>Camp infligeant</th><th>Dégâts</th><th>Bonus</th><th>Unités tuées</th></tr></thead><tbody>${r.tours.map((t) => `<tr><td>${t.camp === 'att' ? 'Attaquant' : 'Défenseur'}</td><td>${fmt(t.base)}</td><td>${fmt(t.bonus)}</td><td>${fmt(t.pertes)}</td></tr>`).join('')}</tbody></table></details> </div></details>`);
+                    const lieuCourt = {'Loge impériale': 'Loge', 'Fourmilière': 'Dôme', 'Terrain de Chasse': 'TdC'}[r.lieu] || r.lieu;
+                    const issueCourte = {'Attaque perdue': 'Défaite', 'Défense perdue': 'Défaite', 'Attaque gagnée': 'Victoire', 'Défense gagnée': 'Victoire'}[r.issue] || r.issue;                    
+                    html.push(`<details class="rc-combat fz-detail ${couleur}"> <summary> <strong>${echapper(issueCourte)}</strong> : ${echapper(r.attaquant)} → ${echapper(r.cible)} (${echapper(lieuCourt)}) ${r.dateAuteur?.texte ? `<span class="rc-date-auteur">[${echapper(r.dateAuteur.texte)}]</span>` : ''} </summary> <div class="rc-interieur"> <div class="fz-actions"> <button type="button" class="fz-bouton rc-modifier-auteur" data-numero="${r.numero}">Auteur : ${echapper(r.auteur)} ✎</button> </div> ${r.occupation ? '<p>Armée d’occupation présente : le propriétaire de la fourmilière n’est pas nécessairement le défenseur réel.</p>' : ''} <div class="rc-chiffres"><div><small>Attaquants initiaux</small><b>${fmt(nA)}</b><small>Pertes : ${fmt(r.pertesAtt)} (${nA ? (r.pertesAtt * 100 / nA).toFixed(2) : 0} %)</small></div> <div><small>Défenseurs initiaux</small><b>${fmt(nD)}</b><small>Pertes : ${fmt(r.pertesDef)} (${nD ? (r.pertesDef * 100 / nD).toFixed(2) : 0} %)</small></div></div> <p>Survivants : attaquant <b>${fmt(somme(r.finAtt))}</b> · défenseur <b>${fmt(somme(r.finDef))}</b></p> <div class="rc-niveaux"> <section class="rc-niveau-camp rc-camp-att"> <h4>Niveaux de l’attaquant — ${echapper(r.attaquant)}</h4> <p>Armes : <b>${r.armes.att ?? 'Non déterminable'}</b></p> <p>${afficherDefense(defenses.att)}</p> </section> <section class="rc-niveau-camp rc-camp-def"> <h4>Niveaux du défenseur — ${echapper(r.cible)}</h4> <p>Armes : <b>${r.armes.def ?? 'Non déterminable'}</b></p> <p>${afficherDefense(defenses.def)}</p> <p>Lieu : <b>${echapper(r.lieu)}</b></p> </section> </div> <p>HoF (TDP 0) : attaquant <b>${secondes(hofA)}</b> · défenseur <b>${secondes(hofD)}</b></p> ${r.exces ? `<p class="rc-alerte">Attention : ${fmt(r.exces)} pertes dépassent les effectifs initiaux.</p>` : ''} ${bilanUnites(r)} ${r.xp.length ? `<p><b>XP :</b> ${r.xp.map((x) => `${fmt(x.quantite)} ${echapper(NOMS[x.source])} → ${echapper(NOMS[x.dest])}${x.applique !== x.quantite ? ' (quantité à vérifier)' : ''}`).join(' ; ')}</p>` : ''} ${afficherArmeeRestante(r, defenses)} <details><summary>Détail des tours (${Math.ceil(r.tours.length / 2)})</summary><table><thead><tr><th>Camp infligeant</th><th>Dégâts</th><th>Bonus</th><th>Unités tuées</th></tr></thead><tbody>${r.tours.map((t) => `<tr><td>${t.camp === 'att' ? 'Attaquant' : 'Défenseur'}</td><td>${fmt(t.base)}</td><td>${fmt(t.bonus)}</td><td>${fmt(t.pertes)}</td></tr>`).join('')}</tbody></table></details> </div></details>`);
                 }
                 html.push(bilanTDP);                
                 html.push('<div id="rc-resultats-va"></div>');
@@ -429,6 +431,7 @@
                 #rc-panneau #rc-bilan-tdp h3 { margin: 10px 0 6px; font-size: var(--fz-taille-14); color: var(--fz-texte); }
                 #rc-panneau #rc-actions-resultats { margin-top: 12px; margin-bottom: 0; }
                 #rc-panneau .rc-niveau-compatible { color: #176b32; font-weight: 700; }                
+                #rc-panneau .rc-date-auteur { margin-left: 8px; font-size: 0.85em; opacity: 0.85; }                
                 @media (max-width: 650px) { #rc-panneau .rc-chiffres { grid-template-columns: 1fr; } }
             `;
             document.head.append(style);            
@@ -1258,7 +1261,8 @@
                 if (ecart <= this.TOLERANCE) candidats.push({va, temps, ecart});
             }
             return candidats.sort((a, b) => a.ecart - b.ecart);
-        }               
+        } 
+        static minimum(distance, duree) { if (!Number.isFinite(distance) || distance <= 0 || duree <= 0) return null; for (let va = 0; va <= this.VA_MAX; va++) { if (TempsTrajet.tempsDepuisDistance(va, distance) <= duree + this.TOLERANCE) return va; } return null; }    
         static async bilan(rapports) {
             const groupes = BilanNiveaux.regrouper(rapports, r => r.defense);
             const sections = [], bilans = [];
@@ -1283,7 +1287,10 @@
                             if (candidats.length) {
                                 exploitables++;
                                 ensembles.push(new Set(candidats.map(c => c.va)));
-                            } else observation = 'Aucune VA compatible';
+                            } else {
+                                const minimum = this.minimum(distance, duree);
+                                observation = minimum !== null ? `VA minimale : ${minimum}` : 'Aucune VA compatible';
+                            }                        
                         } catch (e) {
                             observation = 'Coordonnées indisponibles';
                         }
